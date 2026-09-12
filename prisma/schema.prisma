@@ -14,21 +14,98 @@ datasource db {
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+enum NotificationType {
+  EMAIL
+  SLACK
+  IN_APP
+}
+
+model MerchantSettings {
+  id                       String             @id @default(uuid())
+  shop                     String             @unique
+  notificationEmail        String?
+  slackWebhookUrl          String?
+  slackWorkspaceName       String?
+  slackChannelName         String?
+  enabledNotificationTypes NotificationType[] @default([EMAIL, SLACK, IN_APP])
+  alertOnTriggered         Boolean            @default(true)
+  alertOnFailed            Boolean            @default(true)
+  alertWeeklyDigest        Boolean            @default(true)
+  hasCompletedOnboarding   Boolean            @default(false)
+  updatedAt                DateTime           @updatedAt
+  createdAt                DateTime           @default(now())
+
+  // Relations
+  workflows                WorkflowSetting[]
+  activityLogs             ActivityLog[]
+  suggestions              Suggestion[]
+
+  @@index([shop])
+}
+
+model WorkflowSetting {
+  id                       String             @id @default(uuid())
+  shop                     String
+  recipeSlug               String
+  isActive                 Boolean            @default(false)
+  flowWorkflowId           String?
+  allowedNotificationTypes NotificationType[] @default([EMAIL, SLACK, IN_APP])
+  deliveryChannel          NotificationType   @default(EMAIL)
+  config                   Json               @default("{}")
+  updatedAt                DateTime           @updatedAt
+  createdAt                DateTime           @default(now())
+
+  // Foreign key relation to MerchantSettings
+  merchant                 MerchantSettings   @relation(fields: [shop], references: [shop], onDelete: Cascade)
+
+  @@unique([shop, recipeSlug])
+  @@index([shop])
+}
+
+model ActivityLog {
+  id          String           @id @default(uuid())
+  shop        String
+  recipeSlug  String
+  recipeName  String
+  summaryText String
+  channel     NotificationType
+  status      String           @default("Completed")
+  createdAt   DateTime         @default(now())
+
+  // Foreign key relation to MerchantSettings
+  merchant    MerchantSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+
+  @@index([shop, createdAt(sort: Desc)])
+}
+
+model Suggestion {
+  id          String           @id @default(uuid())
+  shop        String
+  triggerIdea String
+  notes       String?
+  createdAt   DateTime         @default(now())
+
+  // Foreign key relation to MerchantSettings
+  merchant    MerchantSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+
+  @@index([shop])
 }
