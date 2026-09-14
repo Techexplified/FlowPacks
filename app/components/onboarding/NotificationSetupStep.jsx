@@ -49,15 +49,31 @@ export default function NotificationSetupStep({
 
   return (
     <div style={styles.container}>
-      {/* Top Header */}
+      {/* Top Header Banner matching PM design */}
       <div style={styles.header}>
+        <div style={styles.bannerCurves}>
+          <svg style={styles.bannerSvg} viewBox="0 0 500 100" preserveAspectRatio="none">
+            <path
+              d="M 160 0 C 100 45, 200 65, 120 100 L 500 100 L 500 0 Z"
+              fill="rgba(255, 255, 255, 0.08)"
+            />
+            <path
+              d="M 260 0 C 210 40, 300 70, 200 100 L 500 100 L 500 0 Z"
+              fill="rgba(0, 0, 0, 0.14)"
+            />
+          </svg>
+        </div>
+
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
             <img src="/Flowpacks-logo.png" alt="FlowPacks" style={styles.logoImg} />
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>
-        <div style={styles.stepIndicator}>Step 2 of 2: Notifications</div>
+
+        <div style={styles.tagline}>
+          <span style={styles.stepIndicator}>Step 2 of 2: Notifications</span>
+        </div>
       </div>
 
       {/* Main Card */}
@@ -274,50 +290,77 @@ const styles = {
     paddingBottom: "32px",
   },
   header: {
-    background: "linear-gradient(90deg, #4338CA 0%, #6366F1 100%)",
-    borderRadius: "16px 16px 0 0",
-    padding: "16px 28px",
+    position: "relative",
+    background: "linear-gradient(90deg, #5B21B6 0%, #6D28D9 30%, #7C3AED 65%, #5B21B6 100%)",
+    borderRadius: "16px",
+    padding: "16px 32px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     color: "#FFFFFF",
-    boxShadow: "0 4px 12px rgba(79, 70, 229, 0.15)",
+    boxShadow: "0 8px 24px rgba(91, 33, 182, 0.22)",
+    overflow: "hidden",
+    marginBottom: "16px",
+  },
+  bannerCurves: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: "48%",
+    height: "100%",
+    pointerEvents: "none",
+  },
+  bannerSvg: {
+    width: "100%",
+    height: "100%",
   },
   brandGroup: {
+    position: "relative",
+    zIndex: 2,
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "14px",
   },
   logoWrapper: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "8px",
+    width: "48px",
+    height: "48px",
+    borderRadius: "12px",
     backgroundColor: "#FFFFFF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+    flexShrink: 0,
   },
   logoImg: {
-    width: "28px",
-    height: "28px",
+    width: "32px",
+    height: "32px",
     objectFit: "contain",
   },
   brandTitle: {
-    fontSize: "22px",
-    fontWeight: "700",
+    fontSize: "26px",
+    fontWeight: "800",
+    letterSpacing: "-0.03em",
+    color: "#FFFFFF",
+  },
+  tagline: {
+    position: "relative",
+    zIndex: 2,
   },
   stepIndicator: {
     fontSize: "13px",
     fontWeight: "600",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    padding: "6px 12px",
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
+    padding: "6px 14px",
     borderRadius: "20px",
+    letterSpacing: "0.02em",
   },
   card: {
     backgroundColor: "#FFFFFF",
     padding: "36px",
-    borderRadius: "0 0 16px 16px",
+    borderRadius: "16px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)",
   },
   titleSection: {

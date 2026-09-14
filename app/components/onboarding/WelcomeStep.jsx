@@ -3,8 +3,22 @@ import React from "react";
 export default function WelcomeStep({ onContinue }) {
   return (
     <div style={styles.container}>
-      {/* Top Brand Banner */}
+      {/* Top Brand Banner matching exact PM design */}
       <div style={styles.banner}>
+        {/* Abstract fluid overlay curves on the right */}
+        <div style={styles.bannerCurves}>
+          <svg style={styles.bannerSvg} viewBox="0 0 500 100" preserveAspectRatio="none">
+            <path
+              d="M 160 0 C 100 45, 200 65, 120 100 L 500 100 L 500 0 Z"
+              fill="rgba(255, 255, 255, 0.08)"
+            />
+            <path
+              d="M 260 0 C 210 40, 300 70, 200 100 L 500 100 L 500 0 Z"
+              fill="rgba(0, 0, 0, 0.14)"
+            />
+          </svg>
+        </div>
+
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
             <img
@@ -15,6 +29,7 @@ export default function WelcomeStep({ onContinue }) {
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>
+
         <div style={styles.tagline}>
           <span>Automate</span>
           <span style={styles.taglinePlus}>+</span>
@@ -82,32 +97,32 @@ export default function WelcomeStep({ onContinue }) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Footer Bar */}
-      <div style={styles.footerBar}>
-        <div style={styles.statusIndicator}>
-          <div style={styles.greenCheck}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+        {/* Bottom Footer Bar */}
+        <div style={styles.footerBar}>
+          <div style={styles.statusIndicator}>
+            <div style={styles.greenCheck}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <span style={styles.statusText}>FlowPacks is ready to automate.</span>
           </div>
-          <span style={styles.statusText}>FlowPacks is ready to automate.</span>
-        </div>
 
-        <button
-          type="button"
-          onClick={onContinue}
-          style={styles.continueButton}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#4338CA")}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#4F46E5")}
-        >
-          <span>Continue</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </button>
+          <button
+            type="button"
+            onClick={onContinue}
+            style={styles.continueButton}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#4338CA")}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#4F46E5")}
+          >
+            <span>Continue</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -121,57 +136,81 @@ const styles = {
     paddingBottom: "32px",
   },
   banner: {
-    background: "linear-gradient(90deg, #4338CA 0%, #6366F1 50%, #4F46E5 100%)",
-    borderRadius: "16px 16px 0 0",
-    padding: "16px 28px",
+    position: "relative",
+    background: "linear-gradient(90deg, #5B21B6 0%, #6D28D9 30%, #7C3AED 65%, #5B21B6 100%)",
+    borderRadius: "16px",
+    padding: "16px 32px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     color: "#FFFFFF",
-    boxShadow: "0 4px 12px rgba(79, 70, 229, 0.15)",
+    boxShadow: "0 8px 24px rgba(91, 33, 182, 0.22)",
+    overflow: "hidden",
+    marginBottom: "16px",
+  },
+  bannerCurves: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: "48%",
+    height: "100%",
+    pointerEvents: "none",
+  },
+  bannerSvg: {
+    width: "100%",
+    height: "100%",
   },
   brandGroup: {
+    position: "relative",
+    zIndex: 2,
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "14px",
   },
   logoWrapper: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "8px",
+    width: "48px",
+    height: "48px",
+    borderRadius: "12px",
     backgroundColor: "#FFFFFF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+    flexShrink: 0,
   },
   logoImg: {
-    width: "28px",
-    height: "28px",
+    width: "32px",
+    height: "32px",
     objectFit: "contain",
   },
   brandTitle: {
-    fontSize: "22px",
-    fontWeight: "700",
-    letterSpacing: "-0.02em",
+    fontSize: "26px",
+    fontWeight: "800",
+    letterSpacing: "-0.03em",
+    color: "#FFFFFF",
   },
   tagline: {
+    position: "relative",
+    zIndex: 2,
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    fontSize: "13px",
+    gap: "10px",
+    fontSize: "14px",
     fontWeight: "500",
-    opacity: 0.9,
-    letterSpacing: "0.02em",
+    color: "#FFFFFF",
+    letterSpacing: "0.01em",
   },
   taglinePlus: {
-    opacity: 0.6,
-    fontWeight: "700",
+    color: "rgba(255, 255, 255, 0.65)",
+    fontWeight: "600",
+    fontSize: "14px",
   },
   card: {
     backgroundColor: "#FFFFFF",
-    padding: "36px 36px 28px 36px",
+    borderRadius: "16px",
+    padding: "36px 36px 24px 36px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)",
   },
   contentGrid: {
@@ -179,6 +218,7 @@ const styles = {
     gridTemplateColumns: "1.05fr 0.95fr",
     gap: "36px",
     alignItems: "center",
+    marginBottom: "28px",
   },
   leftCol: {
     display: "flex",
@@ -257,14 +297,11 @@ const styles = {
     filter: "drop-shadow(0 10px 20px rgba(79, 70, 229, 0.08))",
   },
   footerBar: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: "0 0 16px 16px",
-    padding: "18px 36px",
     borderTop: "1px solid #F1F5F9",
+    paddingTop: "20px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
   },
   statusIndicator: {
     display: "flex",
