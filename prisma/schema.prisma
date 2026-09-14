@@ -33,26 +33,20 @@ model Session {
   refreshTokenExpires DateTime?
 }
 
-enum NotificationType {
-  EMAIL
-  SLACK
-  IN_APP
-}
-
 model MerchantSettings {
-  id                       String             @id @default(uuid())
-  shop                     String             @unique
+  id                       String            @id @default(uuid())
+  shop                     String            @unique
   notificationEmail        String?
   slackWebhookUrl          String?
   slackWorkspaceName       String?
   slackChannelName         String?
-  enabledNotificationTypes NotificationType[] @default([EMAIL, SLACK, IN_APP])
-  alertOnTriggered         Boolean            @default(true)
-  alertOnFailed            Boolean            @default(true)
-  alertWeeklyDigest        Boolean            @default(true)
-  hasCompletedOnboarding   Boolean            @default(false)
-  updatedAt                DateTime           @updatedAt
-  createdAt                DateTime           @default(now())
+  enabledNotificationTypes String[]          @default(["EMAIL", "SLACK", "IN_APP"])
+  alertOnTriggered         Boolean           @default(true)
+  alertOnFailed            Boolean           @default(true)
+  alertWeeklyDigest        Boolean           @default(true)
+  hasCompletedOnboarding   Boolean           @default(false)
+  updatedAt                DateTime          @updatedAt
+  createdAt                DateTime          @default(now())
 
   // Relations
   workflows                WorkflowSetting[]
@@ -63,19 +57,18 @@ model MerchantSettings {
 }
 
 model WorkflowSetting {
-  id                       String             @id @default(uuid())
-  shop                     String
-  recipeSlug               String
-  isActive                 Boolean            @default(false)
-  flowWorkflowId           String?
-  allowedNotificationTypes NotificationType[] @default([EMAIL, SLACK, IN_APP])
-  deliveryChannel          NotificationType   @default(EMAIL)
-  config                   Json               @default("{}")
-  updatedAt                DateTime           @updatedAt
-  createdAt                DateTime           @default(now())
+  id              String           @id @default(uuid())
+  shop            String
+  recipeSlug      String
+  isActive        Boolean          @default(false)
+  flowWorkflowId  String?
+  deliveryChannel String           @default("EMAIL")
+  config          Json             @default("{}")
+  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime         @default(now())
 
   // Foreign key relation to MerchantSettings
-  merchant                 MerchantSettings   @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  merchant        MerchantSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
 
   @@unique([shop, recipeSlug])
   @@index([shop])
@@ -87,7 +80,7 @@ model ActivityLog {
   recipeSlug  String
   recipeName  String
   summaryText String
-  channel     NotificationType
+  channel     String
   status      String           @default("Completed")
   createdAt   DateTime         @default(now())
 
