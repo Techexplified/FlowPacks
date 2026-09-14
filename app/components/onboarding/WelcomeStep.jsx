@@ -3,18 +3,28 @@ import React from "react";
 export default function WelcomeStep({ onContinue }) {
   return (
     <div style={styles.container}>
-      {/* Top Brand Banner matching exact PM design */}
+      {/* Top Brand Banner matching exact screenshot cross-section */}
       <div style={styles.banner}>
-        {/* Abstract fluid overlay curves on the right */}
+        {/* Exact multi-layered organic fluid cross-section matching design */}
         <div style={styles.bannerCurves}>
-          <svg style={styles.bannerSvg} viewBox="0 0 500 100" preserveAspectRatio="none">
+          <svg style={styles.bannerSvg} viewBox="0 0 1000 100" preserveAspectRatio="none">
+            {/* Layer 1: Ambient soft secondary wave flowing from mid-bottom */}
             <path
-              d="M 160 0 C 100 45, 200 65, 120 100 L 500 100 L 500 0 Z"
-              fill="rgba(255, 255, 255, 0.08)"
+              d="M 500 100 C 540 80, 580 45, 620 15 C 640 3, 670 0, 700 0 L 1000 0 L 1000 100 Z"
+              fill="rgba(42, 14, 98, 0.32)"
             />
+
+            {/* Layer 2: Main organic curved lobe wrapping right behind tagline */}
             <path
-              d="M 260 0 C 210 40, 300 70, 200 100 L 500 100 L 500 0 Z"
-              fill="rgba(0, 0, 0, 0.14)"
+              d="M 605 0 C 575 20, 555 45, 560 64 C 568 82, 630 96, 730 100 L 1000 100 L 1000 0 Z"
+              fill="#331075"
+              opacity="0.75"
+            />
+
+            {/* Layer 3: Subtle ambient depth wave towards bottom right */}
+            <path
+              d="M 730 100 C 810 95, 890 92, 950 95 C 980 97, 995 98, 1000 100 L 1000 100 Z"
+              fill="rgba(25, 5, 65, 0.2)"
             />
           </svg>
         </div>
@@ -137,23 +147,26 @@ const styles = {
   },
   banner: {
     position: "relative",
-    background: "linear-gradient(90deg, #5B21B6 0%, #6D28D9 30%, #7C3AED 65%, #5B21B6 100%)",
-    borderRadius: "16px",
-    padding: "16px 32px",
+    background: "linear-gradient(90deg, #5B29D7 0%, #6835E3 40%, #5824CE 100%)",
+    borderRadius: "14px",
+    height: "72px",
+    padding: "0 36px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     color: "#FFFFFF",
-    boxShadow: "0 8px 24px rgba(91, 33, 182, 0.22)",
+    boxShadow: "0 8px 24px rgba(88, 36, 206, 0.25)",
     overflow: "hidden",
     marginBottom: "16px",
+    boxSizing: "border-box",
   },
   bannerCurves: {
     position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
-    width: "48%",
+    left: 0,
+    width: "100%",
     height: "100%",
     pointerEvents: "none",
   },
@@ -169,26 +182,26 @@ const styles = {
     gap: "14px",
   },
   logoWrapper: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
+    width: "44px",
+    height: "44px",
+    borderRadius: "10px",
     backgroundColor: "#FFFFFF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
     flexShrink: 0,
   },
   logoImg: {
-    width: "32px",
-    height: "32px",
+    width: "28px",
+    height: "28px",
     objectFit: "contain",
   },
   brandTitle: {
-    fontSize: "26px",
-    fontWeight: "800",
-    letterSpacing: "-0.03em",
+    fontSize: "22px",
+    fontWeight: "600",
+    letterSpacing: "-0.01em",
     color: "#FFFFFF",
   },
   tagline: {
@@ -196,16 +209,16 @@ const styles = {
     zIndex: 2,
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    fontSize: "14px",
+    gap: "8px",
+    fontSize: "13.5px",
     fontWeight: "500",
     color: "#FFFFFF",
     letterSpacing: "0.01em",
   },
   taglinePlus: {
-    color: "rgba(255, 255, 255, 0.65)",
-    fontWeight: "600",
-    fontSize: "14px",
+    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: "400",
+    fontSize: "13px",
   },
   card: {
     backgroundColor: "#FFFFFF",
