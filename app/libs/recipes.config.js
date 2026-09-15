@@ -69,11 +69,10 @@ export const AUTOMATION_RECIPES = Object.freeze({
      *   product variant's live inventory (`inventoryQuantity < stockLimit`).
      * - `velocityPct`: Evaluated in the Flow Condition step comparing current vs previous period.
      */
-    compileShopifyQL: (config = {}) => {
+    compileShopifyQL: () => {
       return `
         FROM sales
         SHOW net_items_sold
-        TIMESERIES day
         SINCE -7d
         GROUP BY product_id, product_title
         ORDER BY net_items_sold DESC
@@ -126,15 +125,15 @@ export const AUTOMATION_RECIPES = Object.freeze({
     ]),
     /**
      * Flow Execution Architecture Note:
-     * - ShopifyQL extracts session counts, orders, and conversion rates by product.
+     * - ShopifyQL extracts session counts and orders by product.
      * - `minSessions`, `conversionCeilingPct`, and `sustainedDays` are evaluated in Flow's condition nodes.
      */
-    compileShopifyQL: (config = {}) => {
+    compileShopifyQL: () => {
       return `
-        FROM online_store
-        SHOW sessions, orders, conversion_rate
+        FROM sessions
+        SHOW sessions
         SINCE -7d
-        GROUP BY product_id, product_title
+        GROUP BY landing_page_path
         ORDER BY sessions DESC
       `.trim();
     },
@@ -145,7 +144,6 @@ export const AUTOMATION_RECIPES = Object.freeze({
     name: 'Weekly performance digest',
     category: 'Reporting',
     description: 'Send a weekly summary of key store metrics to your email or Slack.',
-    // Weekly digests require external delivery channels (Email or Slack)
     allowedNotificationTypes: Object.freeze([
       NOTIFICATION_TYPES.EMAIL,
       NOTIFICATION_TYPES.SLACK,
@@ -187,7 +185,7 @@ export const AUTOMATION_RECIPES = Object.freeze({
     compileShopifyQL: () => {
       return `
         FROM sales
-        SHOW net_sales, orders_count
+        SHOW net_sales, orders
         SINCE -7d
         COMPARE TO -14d
       `.trim();
@@ -237,7 +235,7 @@ export const AUTOMATION_RECIPES = Object.freeze({
         FROM sales
         SHOW net_sales
         SINCE -7d
-        COMPARE TO -30d
+        COMPARE TO -14d
         GROUP BY product_id, product_title
         ORDER BY net_sales DESC
         LIMIT ${topCount}
@@ -285,11 +283,11 @@ export const AUTOMATION_RECIPES = Object.freeze({
     compileShopifyQL: (config = {}) => {
       const hours = Number(config.windowHours || 24);
       return `
-        FROM online_store
-        SHOW sessions, orders
+        FROM sessions
+        SHOW sessions
         SINCE -${hours}h
-        COMPARE TO -7d
-        GROUP BY product_id, product_title
+        COMPARE TO -${hours * 2}h
+        GROUP BY landing_page_path
       `.trim();
     },
   }),
@@ -384,20 +382,20 @@ export const getAvailableChannels = (recipeSlug, enabledNotificationTypes = []) 
 export const resolveDeliveryChannel = (
   recipeSlug,
   enabledNotificationTypes = [],
-  preferredChannel = NOTIFICATION_TYPES.EMAIL
+  preferredChannel = NOTIFICATION_TYPES.IN_APP
 ) => {
   const available = getAvailableChannels(recipeSlug, enabledNotificationTypes);
   if (available.length === 0) {
     const recipe = getRecipeBySlug(recipeSlug);
-    return recipe?.allowedNotificationTypes?.[0] || NOTIFICATION_TYPES.EMAIL;
+    return recipe?.allowedNotificationTypes?.[0] || NOTIFICATION_TYPES.IN_APP;
   }
   if (preferredChannel && available.includes(preferredChannel)) {
     return preferredChannel;
   }
   const priority = [
+    NOTIFICATION_TYPES.IN_APP,
     NOTIFICATION_TYPES.EMAIL,
     NOTIFICATION_TYPES.SLACK,
-    NOTIFICATION_TYPES.IN_APP,
   ];
   return priority.find((channel) => available.includes(channel)) || available[0];
 };

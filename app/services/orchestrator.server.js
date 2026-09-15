@@ -2,10 +2,15 @@ import db from "../db.server";
 import { runRecipeDataset } from "../services/shopifyql.server";
 import { dispatchNotification } from "../services/notifier.server";
 import { evaluateRecipe } from "../services/evaluator.server";
-import { getDefaultThresholds } from "../libs/recipes.config";
+import { getDefaultThresholds, getAvailableChannels, getRecipeBySlug } from "../libs/recipes.config";
 
 export async function runWorkflow(admin, shopDomain, recipeSlug, options = { force: false }) {
     try {
+        const recipe = getRecipeBySlug(recipeSlug);
+        if (!recipe) {
+            throw new Error(`Recipe not found: ${recipeSlug}`);
+        }
+
         const workflowSetting = await db.workflowSetting.findUnique({
             where: {
                 shop_recipeSlug: {
@@ -15,16 +20,33 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
             },
         });
 
-        if (workflowSetting && !workflowSetting.isActive && !options.force) {
+        if ((!workflowSetting || !workflowSetting.isActive) && !options.force) {
             return {
                 success: false,
                 skipped: true,
-                reason: "Workflow is currently inactive",
+                reason: "This automation is currently disabled in your Automation Library.",
+            };
+        }
+
+        const merchant = await db.merchantSettings.findUnique({
+            where: { shop: shopDomain },
+        });
+        const enabledTypes = merchant?.enabledNotificationTypes || ["IN_APP"];
+        const availableChannels = getAvailableChannels(recipeSlug, enabledTypes);
+
+        // Core Rule: If no allowed channels are available (e.g. Email/Slack disabled for weekly digest), do NOT fire
+        if (availableChannels.length === 0) {
+            return {
+                success: false,
+                skipped: true,
+                reason: `No valid notification channel (${recipe.allowedNotificationTypes.join(" or ")}) is enabled. Notification will not fire.`,
             };
         }
 
         const config = workflowSetting?.config || getDefaultThresholds(recipeSlug);
-        const channel = workflowSetting?.deliveryChannel || "IN_APP";
+        const channel = availableChannels.includes(workflowSetting?.deliveryChannel)
+            ? workflowSetting.deliveryChannel
+            : availableChannels[0];
 
         const datasetResult = await runRecipeDataset(admin, recipeSlug, config);
         const evaluationResult = await evaluateRecipe(datasetResult, channel);

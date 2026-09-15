@@ -1,10 +1,14 @@
 import { createActivityLog } from "./activity.server";
 
+/**
+ * Core notification dispatcher.
+ * Handles in-app audit logging for triggered automations.
+ */
 export async function dispatchNotification(shopDomain, evaluationResult) {
     if (!evaluationResult || evaluationResult.shouldAlert === false) {
         return {
             delivered: false,
-            reason: "No alert triggered"
+            reason: "No alert triggered",
         };
     }
 
@@ -25,9 +29,9 @@ export async function dispatchNotification(shopDomain, evaluationResult) {
     return {
         delivered: true,
         channel: channel,
-        logRecord: record
+        logRecord: record,
     };
 }
 
-// Alias to maintain compatibility with dispatchNotfication spelling
+// Alias for backwards compatibility
 export const dispatchNotfication = dispatchNotification;

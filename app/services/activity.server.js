@@ -22,7 +22,7 @@ export async function createActivityLog(shopDomain, logData) {
     }
 }
 
-export async function getActivityLogs(shopDomain, timeFilter = "7d") {
+export async function getActivityLogs(shopDomain, timeFilter = "7d", page = 1, pageSize = 10) {
     try {
         const now = new Date();
         const whereClause = { shop: shopDomain };
@@ -36,14 +36,27 @@ export async function getActivityLogs(shopDomain, timeFilter = "7d") {
         }
         // "all" has no createdAt restriction
 
+        const totalCount = await db.activityLog.count({ where: whereClause });
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const currentPage = Math.max(1, Math.min(Number(page) || 1, totalPages));
+        const skip = (currentPage - 1) * pageSize;
+
         const activities = await db.activityLog.findMany({
             where: whereClause,
             orderBy: {
                 createdAt: "desc"
-            }
+            },
+            skip,
+            take: pageSize,
         });
 
-        return activities;
+        return {
+            activities,
+            totalCount,
+            totalPages,
+            page: currentPage,
+            pageSize,
+        };
 
     } catch (err) {
         console.error("Error in getActivityLogs:", err);
@@ -64,6 +77,25 @@ export async function getUnreadLogsCount(shopDomain) {
     } catch (err) {
         console.error("Error in getUnreadLogsCount:", err);
         throw new Error("Failed to fetch unread count");
+    }
+}
+
+export async function getLatestUnreadLogs(shopDomain, limit = 1) {
+    try {
+        const logs = await db.activityLog.findMany({
+            where: {
+                shop: shopDomain,
+                isRead: false
+            },
+            orderBy: {
+                createdAt: "desc"
+            },
+            take: limit
+        });
+        return logs;
+    } catch (err) {
+        console.error("Error in getLatestUnreadLogs:", err);
+        return [];
     }
 }
 

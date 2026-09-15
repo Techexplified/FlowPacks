@@ -183,18 +183,6 @@ export async function toggleWorkflowActive(shopDomain, recipeSlug, isActive) {
       },
     });
 
-    // Log Activity
-    await db.activityLog.create({
-      data: {
-        shop: shopDomain,
-        recipeSlug,
-        recipeName: recipe.name,
-        summaryText: `Automation ${isActive ? "activated" : "deactivated"}`,
-        channel: updated.deliveryChannel,
-        status: "Completed",
-      },
-    });
-
     return updated;
   } catch (err) {
     console.error(`Error toggling workflow ${recipeSlug}:`, err);
@@ -241,18 +229,6 @@ export async function updateWorkflowConfig(shopDomain, recipeSlug, rawConfig, de
       update: {
         deliveryChannel: validChannel || "EMAIL",
         config: validation.sanitizedConfig,
-      },
-    });
-
-    // Log Activity
-    await db.activityLog.create({
-      data: {
-        shop: shopDomain,
-        recipeSlug,
-        recipeName: recipe.name,
-        summaryText: `Thresholds updated and saved`,
-        channel: updated.deliveryChannel,
-        status: "Completed",
       },
     });
 
