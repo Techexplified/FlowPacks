@@ -388,7 +388,8 @@ export const resolveDeliveryChannel = (
 ) => {
   const available = getAvailableChannels(recipeSlug, enabledNotificationTypes);
   if (available.length === 0) {
-    return null;
+    const recipe = getRecipeBySlug(recipeSlug);
+    return recipe?.allowedNotificationTypes?.[0] || NOTIFICATION_TYPES.EMAIL;
   }
   if (preferredChannel && available.includes(preferredChannel)) {
     return preferredChannel;

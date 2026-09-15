@@ -68,10 +68,23 @@ export default function RecipeEditModal({
   const [channel, setChannel] = useState("EMAIL");
   const [errors, setErrors] = useState({});
 
+  const allowedTypes = recipe?.allowedNotificationTypes || ["EMAIL", "SLACK", "IN_APP"];
+  const availableChannels = (recipe?.availableChannels || []).filter((ch) => allowedTypes.includes(ch));
+  const hasAvailableChannels = availableChannels.length > 0;
+
   useEffect(() => {
     if (recipe) {
       setFormData(recipe.config || {});
-      setChannel(recipe.deliveryChannel || "EMAIL");
+      const allowed = recipe.allowedNotificationTypes || ["EMAIL", "SLACK", "IN_APP"];
+      const active = (recipe.availableChannels || []).filter((ch) => allowed.includes(ch));
+      if (active.length > 0) {
+        const initialChannel = active.includes(recipe.deliveryChannel)
+          ? recipe.deliveryChannel
+          : active[0];
+        setChannel(initialChannel);
+      } else {
+        setChannel("");
+      }
       setErrors({});
     }
   }, [recipe]);
@@ -110,6 +123,10 @@ export default function RecipeEditModal({
       }
     });
 
+    if (!hasAvailableChannels) {
+      newErrors.channel = "Please enable Email or Slack in your settings to activate this automation.";
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -117,10 +134,6 @@ export default function RecipeEditModal({
 
     onSave(recipe.slug, formData, channel);
   };
-
-  const channelOptions = recipe.availableChannels && recipe.availableChannels.length > 0
-    ? recipe.availableChannels
-    : ["EMAIL", "SLACK", "IN_APP"];
 
   const getChannelLabel = (ch) => {
     switch (ch) {
@@ -227,13 +240,21 @@ export default function RecipeEditModal({
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
-                style={styles.selectInput}
+                style={{
+                  ...styles.selectInput,
+                  ...(!hasAvailableChannels ? styles.selectDisabled : {}),
+                }}
+                disabled={!hasAvailableChannels}
               >
-                {channelOptions.map((ch) => (
-                  <option key={ch} value={ch}>
-                    {getChannelLabel(ch)}
-                  </option>
-                ))}
+                {!hasAvailableChannels ? (
+                  <option value="">No delivery channel enabled</option>
+                ) : (
+                  availableChannels.map((ch) => (
+                    <option key={ch} value={ch}>
+                      {getChannelLabel(ch)}
+                    </option>
+                  ))
+                )}
               </select>
               <div style={styles.selectArrow}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
@@ -241,7 +262,19 @@ export default function RecipeEditModal({
                 </svg>
               </div>
             </div>
-            <div style={styles.helperText}>Choose where you want to receive alerts.</div>
+
+            {!hasAvailableChannels ? (
+              <div style={styles.warningNote}>
+                ⚠️ This automation requires Email or Slack, but neither is enabled in your notification settings.
+              </div>
+            ) : (
+              <div style={styles.helperText}>
+                {recipe.slug === "weekly-performance-digest"
+                  ? "Weekly digests are sent directly to your Email or Slack."
+                  : "Choose where you want to receive alerts."}
+              </div>
+            )}
+            {errors.channel && <div style={styles.errorText}>{errors.channel}</div>}
           </div>
 
           {/* Footer Actions */}
@@ -418,6 +451,22 @@ const styles = {
     pointerEvents: "none",
     display: "flex",
     alignItems: "center",
+  },
+  selectDisabled: {
+    backgroundColor: "#F9FAFB",
+    color: "#9CA3AF",
+    borderColor: "#E5E7EB",
+    cursor: "not-allowed",
+  },
+  warningNote: {
+    fontSize: "12px",
+    color: "#92400E",
+    backgroundColor: "#FEF3C7",
+    border: "1px solid #FDE68A",
+    borderRadius: "8px",
+    padding: "8px 12px",
+    marginTop: "6px",
+    lineHeight: "1.45",
   },
   inputError: {
     borderColor: "#DC2626",
