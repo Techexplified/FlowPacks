@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useLoaderData, useFetcher, useRouteError } from "react-router";
+import { useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import {
@@ -9,13 +8,11 @@ import {
   disconnectSlackWebhook,
   toggleInAppNotifications,
   toggleChannelNotification,
-  updateAlertPreferences,
 } from "../services/merchant.server";
 import SettingsHeaderBanner from "../components/settings/SettingsHeaderBanner";
 import EmailDestinationCard from "../components/settings/EmailDestinationCard";
 import SlackDestinationCard from "../components/settings/SlackDestinationCard";
 import InAppDestinationCard from "../components/settings/InAppDestinationCard";
-import AlertPreferencesList from "../components/settings/AlertPreferencesList";
 import { settingsStyles } from "../styles/settings.styles";
 
 /**
@@ -32,7 +29,7 @@ export const loader = async ({ request }) => {
 };
 
 /**
- * Server Action: Handles email updates, Slack connection/disconnection, channel toggles, and alert preferences.
+ * Server Action: Handles email updates, Slack connection/disconnection, and channel toggles.
  */
 export const action = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -85,13 +82,6 @@ export const action = async ({ request }) => {
       };
     }
 
-    if (actionType === "UPDATE_ALERT_PREFERENCES") {
-      const key = formData.get("key");
-      const value = formData.get("value") === "true";
-      const updated = await updateAlertPreferences(session.shop, { [key]: value });
-      return { success: true, message: "Preferences updated", updated };
-    }
-
     return { success: false, error: "Unknown action" };
   } catch (err) {
     console.error("Settings action error:", err);
@@ -138,22 +128,6 @@ export default function SettingsPage() {
           {/* Card 3: In-app notifications */}
           <InAppDestinationCard isEnabled={isInAppEnabled} />
         </div>
-      </div>
-
-      {/* Section 2: Notification alerts */}
-      <div style={settingsStyles.sectionWrapper}>
-        <div style={settingsStyles.sectionHeader}>
-          <h2 style={settingsStyles.sectionTitle}>Notification alerts</h2>
-          <p style={settingsStyles.sectionSubtitle}>
-            Choose what kind of alerts you want to receive.
-          </p>
-        </div>
-
-        <AlertPreferencesList
-          alertOnTriggered={settings?.alertOnTriggered ?? true}
-          alertOnFailed={settings?.alertOnFailed ?? true}
-          alertWeeklyDigest={settings?.alertWeeklyDigest ?? true}
-        />
       </div>
     </div>
   );

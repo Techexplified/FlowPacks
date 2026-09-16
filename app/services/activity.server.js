@@ -119,6 +119,36 @@ export async function getLatestUnreadInAppLogs(shopDomain, limit = 1) {
     }
 }
 
+/**
+ * Retrieves the latest unread log that should trigger an In-App popup toast.
+ * Rule: Failed automations (status === "Failed") ALWAYS trigger the popup regardless of channel/settings.
+ * Normal In-App logs trigger when In-App notifications are enabled.
+ */
+export async function getLatestUnreadPopupLogs(shopDomain, isInAppEnabled = true, limit = 1) {
+    try {
+        const conditions = [{ status: "Failed" }];
+        if (isInAppEnabled) {
+            conditions.push({ channel: "IN_APP" });
+        }
+
+        const logs = await db.activityLog.findMany({
+            where: {
+                shop: shopDomain,
+                isRead: false,
+                OR: conditions,
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+            take: limit,
+        });
+        return logs;
+    } catch (err) {
+        console.error("Error in getLatestUnreadPopupLogs:", err);
+        return [];
+    }
+}
+
 export async function markAsRead(shopDomain, logIds) {
     try {
         const idList = Array.isArray(logIds) ? logIds : [logIds];

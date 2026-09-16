@@ -12,7 +12,7 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { authenticate } from "../shopify.server";
 import {
   getUnreadLogsCount,
-  getLatestUnreadInAppLogs,
+  getLatestUnreadPopupLogs,
   markAsRead,
 } from "../services/activity.server";
 import { getOrCreateMerchantSettings } from "../services/merchant.server";
@@ -31,11 +31,9 @@ export const loader = async ({ request }) => {
 
     unreadCount = await getUnreadLogsCount(session.shop);
 
-    // Floating popup toast should ONLY pop up for IN_APP alerts when enabled in settings
-    if (isInAppEnabled) {
-      const latestLogs = await getLatestUnreadInAppLogs(session.shop, 1);
-      latestUnreadLog = latestLogs[0] || null;
-    }
+    // Failed automations ALWAYS pop up as an In-App toast; standard In-App alerts pop up if enabled
+    const latestLogs = await getLatestUnreadPopupLogs(session.shop, isInAppEnabled, 1);
+    latestUnreadLog = latestLogs[0] || null;
   } catch (err) {
     console.error("Error loading activity log unread data:", err);
   }

@@ -1,6 +1,7 @@
 import db from "../db.server";
 import { runRecipeDataset } from "../services/shopifyql.server";
 import { dispatchNotification, sendSlackNotification } from "../services/notifier.server";
+import { createActivityLog } from "../services/activity.server";
 import { evaluateRecipe } from "../services/evaluator.server";
 import { getDefaultThresholds, getAvailableChannels, getRecipeBySlug } from "../libs/recipes.config";
 
@@ -80,6 +81,20 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
 
     } catch (err) {
         console.error(`Error running workflow ${recipeSlug}:`, err);
+        try {
+            const recipe = getRecipeBySlug(recipeSlug);
+            await createActivityLog(shopDomain, {
+                recipeSlug: recipeSlug,
+                recipeName: recipe?.name || recipeSlug,
+                summaryText: `Automation failed: ${err.message || "Execution error"}`,
+                channel: "IN_APP",
+                status: "Failed",
+                isRead: false,
+                details: [{ message: err.message || "An error occurred while executing this automation." }],
+            });
+        } catch (logErr) {
+            console.error("Failed to log activity failure:", logErr);
+        }
         throw new Error(`Failed to run workflow: ${err.message}`);
     }
 }
