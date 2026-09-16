@@ -83,11 +83,18 @@ export default function ActivityLogCard({ log, onMarkRead }) {
     }
   };
 
+  const isRead = Boolean(log.isRead);
+
   return (
     <div
       style={{
         ...activityLogStyles.card,
-        ...(!log.isRead ? activityLogStyles.cardUnread : {}),
+        border: isRead ? "1px solid #F3F4F6" : "1px solid #DDD6FE",
+        backgroundColor: isRead ? "#FFFFFF" : "#FAF8FF",
+        boxShadow: isRead
+          ? "0 1px 2px rgba(0, 0, 0, 0.02)"
+          : "0 2px 6px rgba(92, 40, 216, 0.06)",
+        outline: "none",
       }}
     >
       <div style={activityLogStyles.cardHeader}>

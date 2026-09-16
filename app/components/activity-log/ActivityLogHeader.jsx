@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { activityLogStyles } from "../../styles/activity-log.styles";
 
 /**
@@ -11,15 +11,57 @@ export default function ActivityLogHeader({
   onMarkAllRead,
   onOpenTestRun,
 }) {
+  const [isMarkReadHovered, setIsMarkReadHovered] = useState(false);
+  const [isMarkReadActive, setIsMarkReadActive] = useState(false);
+  const [isTestRunHovered, setIsTestRunHovered] = useState(false);
+
+  const isMarkAllEnabled = unreadCount > 0;
+
+  const getMarkAllBtnStyle = () => {
+    if (!isMarkAllEnabled) {
+      return {
+        ...activityLogStyles.markAllReadBtn,
+        ...activityLogStyles.markAllReadBtnDisabled,
+      };
+    }
+    if (isMarkReadActive) {
+      return {
+        ...activityLogStyles.markAllReadBtn,
+        ...activityLogStyles.markAllReadBtnActive,
+      };
+    }
+    if (isMarkReadHovered) {
+      return {
+        ...activityLogStyles.markAllReadBtn,
+        ...activityLogStyles.markAllReadBtnHover,
+      };
+    }
+    return activityLogStyles.markAllReadBtn;
+  };
+
+  const getTestRunBtnStyle = () => {
+    if (isTestRunHovered) {
+      return {
+        ...activityLogStyles.testRunBtn,
+        ...activityLogStyles.testRunBtnHover,
+      };
+    }
+    return activityLogStyles.testRunBtn;
+  };
+
   return (
     <div style={activityLogStyles.topHeaderRow}>
       <h1 style={activityLogStyles.pageTitle}>Activity log</h1>
 
       <div style={activityLogStyles.controlsGroup}>
+        {/* Test Run Button */}
         <button
           type="button"
-          style={activityLogStyles.testRunBtn}
+          style={getTestRunBtnStyle()}
           onClick={onOpenTestRun}
+          onMouseEnter={() => setIsTestRunHovered(true)}
+          onMouseLeave={() => setIsTestRunHovered(false)}
+          title="Trigger a test run for any recipe"
         >
           <svg
             width="13"
@@ -36,15 +78,48 @@ export default function ActivityLogHeader({
           <span>Test Run</span>
         </button>
 
+        {/* Enhanced Mark All as Read Button */}
         <button
           type="button"
-          style={activityLogStyles.markAllReadBtn}
+          style={getMarkAllBtnStyle()}
           onClick={onMarkAllRead}
-          disabled={unreadCount === 0}
+          onMouseEnter={() => setIsMarkReadHovered(true)}
+          onMouseLeave={() => {
+            setIsMarkReadHovered(false);
+            setIsMarkReadActive(false);
+          }}
+          onMouseDown={() => isMarkAllEnabled && setIsMarkReadActive(true)}
+          onMouseUp={() => setIsMarkReadActive(false)}
+          disabled={!isMarkAllEnabled}
+          title={
+            isMarkAllEnabled
+              ? `Mark ${unreadCount} notification${unreadCount > 1 ? "s" : ""} as read`
+              : "All notifications are already read"
+          }
         >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={
+              !isMarkAllEnabled
+                ? "#9CA3AF"
+                : isMarkReadHovered
+                  ? "#059669"
+                  : "#4B5563"
+            }
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ transition: "stroke 0.18s ease" }}
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
           <span>Mark all as read</span>
         </button>
 
+        {/* Time Filter Select */}
         <div style={activityLogStyles.selectWrapper}>
           <select
             value={timeFilter}
