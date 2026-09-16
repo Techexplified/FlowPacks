@@ -99,13 +99,14 @@ export default function SlackDestinationCard({
             style={{
               ...settingsStyles.iconBox,
               backgroundColor: "#FFF7ED",
+              overflow: "hidden",
             }}
           >
             {/* Official Slack Logo from public directory */}
             <img
               src="/Slack_Symbol_0.svg"
               alt="Slack"
-              style={{ width: "24px", height: "24px", objectFit: "contain" }}
+              style={{ width: "42px", height: "42px", objectFit: "contain" }}
             />
           </div>
 
