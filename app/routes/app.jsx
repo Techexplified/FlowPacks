@@ -12,20 +12,30 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { authenticate } from "../shopify.server";
 import {
   getUnreadLogsCount,
-  getLatestUnreadLogs,
+  getLatestUnreadInAppLogs,
   markAsRead,
 } from "../services/activity.server";
+import { getOrCreateMerchantSettings } from "../services/merchant.server";
 import NotificationToast from "../components/common/NotificationToast";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
 
   let unreadCount = 0;
-  let latestUnreadLogs = [];
+  let latestUnreadLog = null;
 
   try {
+    const merchant = await getOrCreateMerchantSettings(session.shop);
+    const enabledTypes = merchant?.enabledNotificationTypes || ["EMAIL", "SLACK", "IN_APP"];
+    const isInAppEnabled = enabledTypes.includes("IN_APP");
+
     unreadCount = await getUnreadLogsCount(session.shop);
-    latestUnreadLogs = await getLatestUnreadLogs(session.shop, 1);
+
+    // Floating popup toast should ONLY pop up for IN_APP alerts when enabled in settings
+    if (isInAppEnabled) {
+      const latestLogs = await getLatestUnreadInAppLogs(session.shop, 1);
+      latestUnreadLog = latestLogs[0] || null;
+    }
   } catch (err) {
     console.error("Error loading activity log unread data:", err);
   }
@@ -34,7 +44,7 @@ export const loader = async ({ request }) => {
     // eslint-disable-next-line no-undef
     apiKey: process.env.SHOPIFY_API_KEY || "",
     unreadCount,
-    latestUnreadLog: latestUnreadLogs[0] || null,
+    latestUnreadLog,
   };
 };
 
@@ -101,11 +111,11 @@ export default function App() {
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
-        <s-link href="/app">Home</s-link>
         <s-link href="/app/automation-library">Automation Library</s-link>
         <s-link href="/app/activity-log">
           {unreadCount > 0 ? `Activity Log (${unreadCount})` : "Activity Log"}
         </s-link>
+        <s-link href="/app/settings">Settings</s-link>
       </s-app-nav>
 
       <Outlet />

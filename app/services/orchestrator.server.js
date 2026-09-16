@@ -1,6 +1,6 @@
 import db from "../db.server";
 import { runRecipeDataset } from "../services/shopifyql.server";
-import { dispatchNotification } from "../services/notifier.server";
+import { dispatchNotification, sendSlackNotification } from "../services/notifier.server";
 import { evaluateRecipe } from "../services/evaluator.server";
 import { getDefaultThresholds, getAvailableChannels, getRecipeBySlug } from "../libs/recipes.config";
 
@@ -52,7 +52,16 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
         const evaluationResult = await evaluateRecipe(datasetResult, channel);
 
         if (evaluationResult.shouldAlert === true) {
-            const notificationResult = await dispatchNotification(shopDomain, evaluationResult);
+            let notificationResult;
+            if (channel === "SLACK" && merchant?.slackWebhookUrl) {
+                notificationResult = await sendSlackNotification(
+                    merchant.slackWebhookUrl,
+                    evaluationResult,
+                    shopDomain
+                );
+            } else {
+                notificationResult = await dispatchNotification(shopDomain, evaluationResult);
+            }
 
             return {
                 success: true,

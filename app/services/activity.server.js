@@ -99,6 +99,26 @@ export async function getLatestUnreadLogs(shopDomain, limit = 1) {
     }
 }
 
+export async function getLatestUnreadInAppLogs(shopDomain, limit = 1) {
+    try {
+        const logs = await db.activityLog.findMany({
+            where: {
+                shop: shopDomain,
+                isRead: false,
+                channel: "IN_APP",
+            },
+            orderBy: {
+                createdAt: "desc"
+            },
+            take: limit
+        });
+        return logs;
+    } catch (err) {
+        console.error("Error in getLatestUnreadInAppLogs:", err);
+        return [];
+    }
+}
+
 export async function markAsRead(shopDomain, logIds) {
     try {
         const idList = Array.isArray(logIds) ? logIds : [logIds];

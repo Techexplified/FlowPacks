@@ -262,3 +262,188 @@ export async function createSuggestion(shopDomain, triggerIdea, notes = "") {
     throw err;
   }
 }
+
+// Update merchant email
+export async function updateMerchantEmail(shopDomain, email) {
+  try {
+    const trimmedEmail = email ? email.trim() : null;
+    const current = await db.merchantSettings.findUnique({
+      where: { shop: shopDomain },
+      select: { enabledNotificationTypes: true },
+    });
+
+    const types = new Set(current?.enabledNotificationTypes || []);
+    if (trimmedEmail && trimmedEmail.includes("@")) {
+      types.add("EMAIL");
+    } else {
+      types.delete("EMAIL");
+    }
+
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop: shopDomain },
+      data: {
+        notificationEmail: trimmedEmail,
+        enabledNotificationTypes: Array.from(types),
+      },
+    });
+    return updatedSettings;
+  } catch (err) {
+    console.error("Error updating merchant email:", err);
+    throw err;
+  }
+}
+
+// For Connecting Slack
+export async function connectSlackWebhook(shop, { webhookUrl, workspaceName, channelName }) {
+  try {
+    const cleanUrl = webhookUrl ? webhookUrl.trim() : "";
+    if (!cleanUrl || !cleanUrl.startsWith("https://")) {
+      throw new Error("Please provide a valid HTTPS Slack webhook URL.");
+    }
+
+    const ping = await fetch(cleanUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "FlowPacks connected successfully! 🚀" }),
+    });
+
+    if (!ping.ok) {
+      throw new Error("Invalid Slack webhook URL or channel not reachable.");
+    }
+
+    const current = await db.merchantSettings.findUnique({
+      where: { shop },
+      select: { enabledNotificationTypes: true },
+    });
+
+    const types = new Set(current?.enabledNotificationTypes || []);
+    types.add("SLACK");
+
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop },
+      data: {
+        slackWebhookUrl: cleanUrl,
+        slackWorkspaceName: workspaceName ? workspaceName.trim() : "Slack Workspace",
+        slackChannelName: channelName ? channelName.trim() : "#general",
+        enabledNotificationTypes: Array.from(types),
+      },
+    });
+
+    return updatedSettings;
+  } catch (err) {
+    console.error("Error connecting Slack webhook:", err);
+    throw err;
+  }
+}
+
+// For Disconnecting Slack
+export async function disconnectSlackWebhook(shop) {
+  try {
+    const current = await db.merchantSettings.findUnique({
+      where: { shop },
+      select: { enabledNotificationTypes: true },
+    });
+    const types = new Set(current?.enabledNotificationTypes || []);
+    types.delete("SLACK");
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop },
+      data: {
+        slackWebhookUrl: null,
+        slackWorkspaceName: null,
+        slackChannelName: null,
+        enabledNotificationTypes: Array.from(types),
+      },
+    });
+    return updatedSettings;
+  } catch (err) {
+    console.error("Error disconnecting Slack webhook:", err);
+    throw err;
+  }
+}
+
+// Toggle in-app notifications
+export async function toggleInAppNotifications(shop, isEnabled) {
+  try {
+    const current = await db.merchantSettings.findUnique({
+      where: { shop },
+      select: { enabledNotificationTypes: true },
+    });
+
+    const types = new Set(current?.enabledNotificationTypes || []);
+    if (isEnabled) {
+      types.add("IN_APP");
+    } else {
+      types.delete("IN_APP");
+    }
+
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop },
+      data: {
+        enabledNotificationTypes: Array.from(types),
+      },
+    });
+
+    return updatedSettings;
+  } catch (err) {
+    console.error("Error toggling in-app notifications:", err);
+    throw err;
+  }
+}
+
+// Update notification alert preferences (checkboxes)
+export async function updateAlertPreferences(shop, { alertOnTriggered, alertOnFailed, alertWeeklyDigest }) {
+  try {
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop },
+      data: {
+        ...(alertOnTriggered !== undefined ? { alertOnTriggered: Boolean(alertOnTriggered) } : {}),
+        ...(alertOnFailed !== undefined ? { alertOnFailed: Boolean(alertOnFailed) } : {}),
+        ...(alertWeeklyDigest !== undefined ? { alertWeeklyDigest: Boolean(alertWeeklyDigest) } : {}),
+      },
+    });
+
+    return updatedSettings;
+  } catch (err) {
+    console.error("Error updating alert preferences:", err);
+    throw err;
+  }
+}
+
+// Toggle any notification channel (EMAIL, SLACK, IN_APP) independently
+export async function toggleChannelNotification(shop, channelType, isEnabled) {
+  try {
+    const current = await db.merchantSettings.findUnique({
+      where: { shop },
+      select: {
+        enabledNotificationTypes: true,
+        notificationEmail: true,
+        slackWebhookUrl: true,
+      },
+    });
+
+    const types = new Set(current?.enabledNotificationTypes || []);
+    if (isEnabled) {
+      if (channelType === "EMAIL" && (!current?.notificationEmail || !current?.notificationEmail.includes("@"))) {
+        throw new Error("Please configure a valid email address first before enabling email alerts.");
+      }
+      if (channelType === "SLACK" && !current?.slackWebhookUrl) {
+        throw new Error("Please connect a Slack webhook URL first before enabling Slack alerts.");
+      }
+      types.add(channelType);
+    } else {
+      types.delete(channelType);
+    }
+
+    const updatedSettings = await db.merchantSettings.update({
+      where: { shop },
+      data: {
+        enabledNotificationTypes: Array.from(types),
+      },
+    });
+
+    return updatedSettings;
+  } catch (err) {
+    console.error(`Error toggling channel ${channelType}:`, err);
+    throw err;
+  }
+}
