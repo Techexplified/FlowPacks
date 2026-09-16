@@ -1,42 +1,39 @@
-import React from "react";
 import { Link } from "react-router";
+import { Activity, Boxes } from "lucide-react";
 import { activityLogStyles } from "../../styles/activity-log.styles";
 
 /**
- * Top FlowPacks purple gradient header banner for Activity Log.
+ * Top FlowPacks purple gradient header banner for Activity Log matching Settings.
  */
 export default function ActivityLogHeaderBanner() {
   return (
     <div style={activityLogStyles.banner}>
+      {/* Background ambient svg curves matching Settings */}
       <div style={activityLogStyles.bannerCurves}>
         <svg
           style={activityLogStyles.bannerSvg}
-          viewBox="0 0 1000 100"
+          viewBox="0 0 1000 120"
           preserveAspectRatio="none"
+          fill="none"
         >
           <path
-            d="M 500 100 C 540 80, 580 45, 620 15 C 640 3, 670 0, 700 0 L 1000 0 L 1000 100 Z"
-            fill="rgba(42, 14, 98, 0.32)"
+            d="M-50,20 C200,90 400,-20 650,50 C800,90 950,20 1050,40"
+            stroke="rgba(255, 255, 255, 0.12)"
+            strokeWidth="4"
+            fill="none"
           />
           <path
-            d="M 605 0 C 575 20, 555 45, 560 64 C 568 82, 630 96, 730 100 L 1000 100 L 1000 0 Z"
-            fill="#331075"
-            opacity="0.75"
-          />
-          <path
-            d="M 730 100 C 810 95, 890 92, 950 95 C 980 97, 995 98, 1000 100 L 1000 100 Z"
-            fill="rgba(25, 5, 65, 0.2)"
+            d="M-20,70 C250,130 500,10 750,80 C900,110 1000,60 1080,70"
+            stroke="rgba(255, 255, 255, 0.08)"
+            strokeWidth="6"
+            fill="none"
           />
         </svg>
       </div>
 
       <div style={activityLogStyles.brandGroup}>
         <div style={activityLogStyles.logoWrapper}>
-          <img
-            src="/Flowpacks-logo.png"
-            alt="FlowPacks"
-            style={activityLogStyles.logoImg}
-          />
+          <Activity size={22} color="#5C28D8" strokeWidth={2.2} />
         </div>
         <div>
           <h1 style={activityLogStyles.brandTitle}>Activity Log</h1>
@@ -59,19 +56,7 @@ export default function ActivityLogHeaderBanner() {
           to="/app/automation-library"
           style={activityLogStyles.backLibraryBtn}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
+          <Boxes size={14} color="#FFFFFF" strokeWidth={2.2} />
           <span>Automation Library</span>
         </Link>
       </div>

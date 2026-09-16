@@ -39,7 +39,7 @@ export const activityLogStyles = {
     color: "#FFFFFF",
     boxShadow: "0 8px 24px rgba(88, 36, 206, 0.22)",
     overflow: "hidden",
-    marginBottom: "20px",
+    marginBottom: "24px",
     boxSizing: "border-box",
   },
   bannerCurves: {

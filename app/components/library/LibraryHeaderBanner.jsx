@@ -1,35 +1,42 @@
-import React from "react";
 import { Link } from "react-router";
+import { Boxes, Activity } from "lucide-react";
 import { libraryStyles } from "../../styles/library.styles";
 
 export default function LibraryHeaderBanner() {
   return (
     <div style={libraryStyles.banner}>
+      {/* Background ambient svg curves matching Settings */}
       <div style={libraryStyles.bannerCurves}>
-        <svg style={libraryStyles.bannerSvg} viewBox="0 0 1000 100" preserveAspectRatio="none">
+        <svg
+          style={libraryStyles.bannerSvg}
+          viewBox="0 0 1000 120"
+          preserveAspectRatio="none"
+          fill="none"
+        >
           <path
-            d="M 500 100 C 540 80, 580 45, 620 15 C 640 3, 670 0, 700 0 L 1000 0 L 1000 100 Z"
-            fill="rgba(42, 14, 98, 0.32)"
+            d="M-50,20 C200,90 400,-20 650,50 C800,90 950,20 1050,40"
+            stroke="rgba(255, 255, 255, 0.12)"
+            strokeWidth="4"
+            fill="none"
           />
           <path
-            d="M 605 0 C 575 20, 555 45, 560 64 C 568 82, 630 96, 730 100 L 1000 100 L 1000 0 Z"
-            fill="#331075"
-            opacity="0.75"
-          />
-          <path
-            d="M 730 100 C 810 95, 890 92, 950 95 C 980 97, 995 98, 1000 100 L 1000 100 Z"
-            fill="rgba(25, 5, 65, 0.2)"
+            d="M-20,70 C250,130 500,10 750,80 C900,110 1000,60 1080,70"
+            stroke="rgba(255, 255, 255, 0.08)"
+            strokeWidth="6"
+            fill="none"
           />
         </svg>
       </div>
 
       <div style={libraryStyles.brandGroup}>
         <div style={libraryStyles.logoWrapper}>
-          <img src="/Flowpacks-logo.png" alt="FlowPacks" style={libraryStyles.logoImg} />
+          <Boxes size={22} color="#5C28D8" strokeWidth={2.2} />
         </div>
         <div>
           <h1 style={libraryStyles.brandTitle}>Automation Library</h1>
-          <p style={libraryStyles.brandSubtitle}>Ready-to-run automations for your store.</p>
+          <p style={libraryStyles.brandSubtitle}>
+            Ready-to-run automations for your store.
+          </p>
         </div>
       </div>
 
@@ -43,10 +50,7 @@ export default function LibraryHeaderBanner() {
         </div>
 
         <Link to="/app/activity-log" style={libraryStyles.activityLogBtn}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+          <Activity size={14} color="#FFFFFF" strokeWidth={2.2} />
           <span>Activity log</span>
         </Link>
       </div>
