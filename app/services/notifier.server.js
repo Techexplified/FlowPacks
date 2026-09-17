@@ -36,7 +36,26 @@ export async function dispatchNotification(shopDomain, evaluationResult, status 
 // Alias for backwards compatibility
 export const dispatchNotfication = dispatchNotification;
 
-// Handles slack notifcation and then calls dispatchNotification to log activity
+function getRecipeEmoji(slug) {
+  switch (slug) {
+    case "rising-demand-falling-stock":
+      return "📦";
+    case "high-traffic-low-conversion":
+      return "📉";
+    case "weekly-performance-digest":
+      return "📊";
+    case "slowing-down-bestseller":
+      return "⚠️";
+    case "abandoned-momentum":
+      return "⚡";
+    case "new-product-underperforming":
+      return "🚀";
+    default:
+      return "⚡";
+  }
+}
+
+// Handles slack notification and then calls dispatchNotification to log activity
 export async function sendSlackNotification(webhookUrl, evaluationResult, shopDomain) {
   if (!webhookUrl) {
     return {
@@ -53,34 +72,74 @@ export async function sendSlackNotification(webhookUrl, evaluationResult, shopDo
   }
 
   try {
-    // Format flagged items cleanly as bullet points
-    const itemsList = Array.isArray(evaluationResult.flaggedItems) && evaluationResult.flaggedItems.length > 0
-      ? evaluationResult.flaggedItems
-          .slice(0, 5)
-          .map((item) => {
-            const desc = item.message || item.detail || item.reason || (item.totalSales !== undefined ? `$${Number(item.totalSales).toFixed(2)} sales across ${item.totalOrders} orders` : "");
-            return `• *${item.title || item.name || item.productId || "Metric"}*: ${desc}`;
-          })
-          .join("\n")
-      : null;
+    const totalFlagged = Array.isArray(evaluationResult.flaggedItems)
+      ? evaluationResult.flaggedItems.length
+      : 0;
+    const displayItems = Array.isArray(evaluationResult.flaggedItems)
+      ? evaluationResult.flaggedItems.slice(0, 5)
+      : [];
+
+    let itemsList = null;
+    if (displayItems.length > 0) {
+      const rows = displayItems.map((item) => {
+        const rawTitle = item.title || item.name || item.productId || "Store Metric";
+        const title = rawTitle
+          .replace(/[\r\n]+/g, " ")
+          .replace(/\*/g, "") // avoid raw asterisks breaking Slack mrkdwn
+          .trim();
+        const desc =
+          item.message ||
+          item.detail ||
+          item.reason ||
+          (item.totalSales !== undefined
+            ? `$${Number(item.totalSales).toFixed(2)} sales across ${item.totalOrders} orders`
+            : "");
+        return `• *${title}*: ${desc}`;
+      });
+
+      if (totalFlagged > 5) {
+        rows.push(`_...and ${totalFlagged - 5} more items in FlowPacks._`);
+      }
+      itemsList = rows.join("\n");
+    }
+
+    const emoji = getRecipeEmoji(evaluationResult.recipeSlug);
+    const recipeName = evaluationResult.recipeName || "Automation Alert";
+    const activityLogUrl = `https://${shopDomain}/admin/apps/flowpacks/app/activity-log`;
 
     // Standard Slack Block Kit payload
     const payload = {
-      text: `⚠️ FlowPacks Alert: ${evaluationResult.recipeName || "Automation Triggered"}`,
+      text: `${emoji} FlowPacks Alert: ${recipeName} (${shopDomain})`,
       blocks: [
         {
           type: "header",
           text: {
             type: "plain_text",
-            text: `⚡ FlowPacks Alert: ${evaluationResult.recipeName || "Automation Triggered"}`,
+            text: `${emoji} FlowPacks Alert: ${recipeName}`,
             emoji: true,
           },
         },
         {
           type: "section",
+          fields: [
+            {
+              type: "mrkdwn",
+              text: `*Store:*\n\`${shopDomain}\``,
+            },
+            {
+              type: "mrkdwn",
+              text: `*Status:*\n⚡ Attention Needed`,
+            },
+          ],
+        },
+        {
+          type: "divider",
+        },
+        {
+          type: "section",
           text: {
             type: "mrkdwn",
-            text: `*Store:* \`${shopDomain}\`\n*Summary:* ${evaluationResult.summary || "Conditions met."}`,
+            text: `*Summary:*\n${evaluationResult.summary || "Automation conditions met."}`,
           },
         },
         ...(itemsList
@@ -94,6 +153,18 @@ export async function sendSlackNotification(webhookUrl, evaluationResult, shopDo
               },
             ]
           : []),
+        {
+          type: "divider",
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `FlowPacks Automation Monitor • <${activityLogUrl}|Open Activity Log →>`,
+            },
+          ],
+        },
       ],
     };
 

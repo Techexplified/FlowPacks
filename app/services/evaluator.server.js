@@ -1,4 +1,16 @@
 /**
+ * Helper to sanitize product titles and avoid formatting bugs in Slack/In-App.
+ */
+function cleanTitle(title) {
+    if (!title || typeof title !== "string") return "Product";
+    return title
+        .replace(/[\r\n]+/g, " ")
+        .replace(/\s*\|\s*$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+/**
  * Helper to safely extract comparison values from ShopifyQL rows.
  * Handles dynamic column prefixes like `comparison_net_sales__sub_14d`, `previous_net_sales`, etc.
  */
@@ -31,15 +43,15 @@ function evaluateRisingDemand(data, config = {}) {
         if (currentStock < stockLimit && unitsSold > 0) {
             flaggedItems.push({
                 productId: item.product_id,
-                title: item.product_title,
+                title: cleanTitle(item.product_title),
                 currentInventory: currentStock,
                 salesUnits: unitsSold,
                 productImageUrl: item.productImageUrl || null,
-                message: `Stock is ${currentStock} while ${unitsSold} units sold recently`,
+                message: `${currentStock} in stock • ${unitsSold} sold recently`,
             });
         }
     }
-    const summary = `${flaggedItems.length} product(s) have high demand but low stock`;
+    const summary = `${flaggedItems.length} product(s) with surging sales are running low on inventory`;
     return { flaggedItems, summary };
 }
 
@@ -57,16 +69,16 @@ function evaluateHighTrafficLowConversion(data, config = {}) {
         if (sessions >= minSessions && conversionRate < maxConversion) {
             flaggedItems.push({
                 productId: item.product_id,
-                title: item.product_title,
+                title: cleanTitle(item.product_title),
                 sessions,
                 orders,
                 conversionRate: conversionRate.toFixed(2),
                 productImageUrl: item.productImageUrl || null,
-                message: `Product has ${sessions} sessions and ${orders} order(s) (${conversionRate.toFixed(2)}% conversion rate)`,
+                message: `${sessions.toLocaleString()} sessions • ${orders} order(s) (${conversionRate.toFixed(2)}% conversion)`,
             });
         }
     }
-    const summary = `${flaggedItems.length} product(s) have high traffic but low conversion`;
+    const summary = `${flaggedItems.length} high-traffic product(s) have conversion rates below ${maxConversion}%`;
     return { flaggedItems, summary };
 }
 
@@ -85,15 +97,26 @@ function evaluateWeeklyPerformanceDigest(data) {
     }
 
     let summary = `Weekly Digest: $${totalSales.toFixed(2)} sales across ${totalOrders} orders`;
+    let comparisonText = "";
     if (previousSales > 0) {
         const diffPct = ((totalSales - previousSales) / previousSales) * 100;
         const sign = diffPct >= 0 ? "+" : "";
-        summary += ` (${sign}${diffPct.toFixed(1)}% vs. previous period)`;
+        comparisonText = ` (${sign}${diffPct.toFixed(1)}% vs previous period)`;
+        summary += comparisonText;
     }
 
     return {
         shouldAlert: true,
-        flaggedItems: [{ totalSales, totalOrders, previousSales, previousOrders }],
+        flaggedItems: [
+            {
+                totalSales,
+                totalOrders,
+                previousSales,
+                previousOrders,
+                title: "Weekly Store Performance",
+                message: `Gross: $${totalSales.toFixed(2)} • ${totalOrders} orders${comparisonText}`,
+            },
+        ],
         summary,
     };
 }
@@ -114,18 +137,18 @@ function evaluateSlowingBestSeller(data, config = {}) {
             if (declinePct >= dropThresholdPct) {
                 flaggedItems.push({
                     productId: item.product_id,
-                    title: item.product_title,
+                    title: cleanTitle(item.product_title),
                     currentSales,
                     baselineSales,
                     dropPercentage: declinePct.toFixed(1),
                     productImageUrl: item.productImageUrl || null,
-                    message: `Sales dropped by ${declinePct.toFixed(1)}% compared to baseline ($${currentSales.toFixed(2)} vs. $${baselineSales.toFixed(2)})`,
+                    message: `Sales down ${declinePct.toFixed(1)}% ($${currentSales.toFixed(2)} vs $${baselineSales.toFixed(2)} baseline)`,
                 });
             }
         }
     }
 
-    const summary = `${flaggedItems.length} best seller(s) experiencing sales slowdown`;
+    const summary = `${flaggedItems.length} top seller(s) experiencing significant sales slowdown`;
     return { flaggedItems, summary };
 }
 
@@ -151,12 +174,12 @@ function evaluateAbandonedMomentum(data, config = {}) {
         if (isSpike && orders === 0) {
             flaggedItems.push({
                 productId: item.product_id,
-                title: item.product_title,
+                title: cleanTitle(item.product_title),
                 sessions: currentSessions,
                 orders,
                 growthPercentage: growthPct > 0 ? growthPct.toFixed(1) : undefined,
                 productImageUrl: item.productImageUrl || null,
-                message: `Traffic spiked (${currentSessions} visits) with 0 orders`,
+                message: `${currentSessions.toLocaleString()} visits (${growthPct > 0 ? `+${growthPct.toFixed(0)}% spike` : "high traffic"}) • 0 orders`,
             });
         }
     }
@@ -175,16 +198,16 @@ function evaluateNewProductPerformance(data, config = {}) {
         if (unitsSold < minSales) {
             flaggedItems.push({
                 productId: item.product_id,
-                title: item.product_title,
+                title: cleanTitle(item.product_title),
                 salesUnits: unitsSold,
                 createdAt: item.createdAt || null,
                 productImageUrl: item.productImageUrl || null,
-                message: `New product sold only ${unitsSold} unit(s) (expected at least ${minSales})`,
+                message: `${unitsSold} unit(s) sold (expected at least ${minSales})`,
             });
         }
     }
 
-    const summary = `${flaggedItems.length} new product(s) underperforming`;
+    const summary = `${flaggedItems.length} newly launched product(s) are below target sales velocity`;
     return { flaggedItems, summary };
 }
 
