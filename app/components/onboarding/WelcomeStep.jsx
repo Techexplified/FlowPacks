@@ -1,41 +1,36 @@
-import React from "react";
+import { Sparkles } from "lucide-react";
 
 export default function WelcomeStep({ onContinue }) {
   return (
     <div style={styles.container}>
-      {/* Top Brand Banner matching exact screenshot cross-section */}
+      {/* Top Brand Banner matching unified aesthetic */}
       <div style={styles.banner}>
-        {/* Exact multi-layered organic fluid cross-section matching design */}
+        {/* Ambient background curves */}
         <div style={styles.bannerCurves}>
-          <svg style={styles.bannerSvg} viewBox="0 0 1000 100" preserveAspectRatio="none">
-            {/* Layer 1: Ambient soft secondary wave flowing from mid-bottom */}
+          <svg
+            style={styles.bannerSvg}
+            viewBox="0 0 1000 120"
+            preserveAspectRatio="none"
+            fill="none"
+          >
             <path
-              d="M 500 100 C 540 80, 580 45, 620 15 C 640 3, 670 0, 700 0 L 1000 0 L 1000 100 Z"
-              fill="rgba(42, 14, 98, 0.32)"
+              d="M-50,20 C200,90 400,-20 650,50 C800,90 950,20 1050,40"
+              stroke="rgba(255, 255, 255, 0.12)"
+              strokeWidth="4"
+              fill="none"
             />
-
-            {/* Layer 2: Main organic curved lobe wrapping right behind tagline */}
             <path
-              d="M 605 0 C 575 20, 555 45, 560 64 C 568 82, 630 96, 730 100 L 1000 100 L 1000 0 Z"
-              fill="#331075"
-              opacity="0.75"
-            />
-
-            {/* Layer 3: Subtle ambient depth wave towards bottom right */}
-            <path
-              d="M 730 100 C 810 95, 890 92, 950 95 C 980 97, 995 98, 1000 100 L 1000 100 Z"
-              fill="rgba(25, 5, 65, 0.2)"
+              d="M-20,70 C250,130 500,10 750,80 C900,110 1000,60 1080,70"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth="6"
+              fill="none"
             />
           </svg>
         </div>
 
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
-            <img
-              src="/Flowpacks-logo.png"
-              alt="FlowPacks"
-              style={styles.logoImg}
-            />
+            <Sparkles size={22} color="#5C28D8" strokeWidth={2.2} />
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>

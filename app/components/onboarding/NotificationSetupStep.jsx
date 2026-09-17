@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import { useFetcher } from "react-router";
+import { Sparkles, Mail, Bell, ArrowLeft, ArrowRight } from "lucide-react";
 
 export default function NotificationSetupStep({
   defaultEmail = "",
@@ -9,13 +11,76 @@ export default function NotificationSetupStep({
   isSubmitting = false,
   errorMessage = null,
 }) {
+  const fetcher = useFetcher();
   const initialTypes = initialSettings?.enabledNotificationTypes || ["EMAIL", "SLACK", "IN_APP"];
 
   const [email, setEmail] = useState(initialSettings?.notificationEmail || defaultEmail || "");
   const [emailEnabled, setEmailEnabled] = useState(initialTypes.includes("EMAIL"));
-  const [slackEnabled, setSlackEnabled] = useState(initialTypes.includes("SLACK"));
+  const [slackEnabled, setSlackEnabled] = useState(initialTypes.includes("SLACK") && Boolean(initialSettings?.slackWebhookUrl));
   const [inAppEnabled, setInAppEnabled] = useState(initialTypes.includes("IN_APP"));
+
+  // Slack state
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState(initialSettings?.slackWebhookUrl || "");
+  const [slackWorkspaceName, setSlackWorkspaceName] = useState(initialSettings?.slackWorkspaceName || "");
+  const [slackChannelName, setSlackChannelName] = useState(initialSettings?.slackChannelName || "");
+  const [isSlackEditing, setIsSlackEditing] = useState(!initialSettings?.slackWebhookUrl);
+
   const [localError, setLocalError] = useState("");
+
+  // Sync state when fetcher returns from CONNECT_SLACK or DISCONNECT_SLACK
+  useEffect(() => {
+    if (fetcher.data?.updated) {
+      const updated = fetcher.data.updated;
+      setSlackWebhookUrl(updated.slackWebhookUrl || "");
+      setSlackWorkspaceName(updated.slackWorkspaceName || "");
+      setSlackChannelName(updated.slackChannelName || "");
+      if (updated.slackWebhookUrl) {
+        setIsSlackEditing(false);
+        setSlackEnabled(true);
+      } else {
+        setIsSlackEditing(true);
+        setSlackEnabled(false);
+      }
+    }
+  }, [fetcher.data]);
+
+  const isSlackConnected = Boolean(slackWebhookUrl);
+
+  const isConnectingSlack =
+    fetcher.state === "submitting" &&
+    fetcher.formData?.get("actionType") === "CONNECT_SLACK";
+
+  const isDisconnectingSlack =
+    fetcher.state === "submitting" &&
+    fetcher.formData?.get("actionType") === "DISCONNECT_SLACK";
+
+  const handleConnectSlack = (e) => {
+    e.preventDefault();
+    setLocalError("");
+    fetcher.submit(
+      {
+        actionType: "CONNECT_SLACK",
+        webhookUrl: slackWebhookUrl.trim(),
+        workspaceName: slackWorkspaceName.trim() || `${shopName} Team`,
+        channelName: slackChannelName.trim() || "#general",
+      },
+      { method: "POST" }
+    );
+  };
+
+  const handleDisconnectSlack = () => {
+    if (confirm("Disconnect Slack? Alerts will no longer be sent to your Slack channel.")) {
+      fetcher.submit(
+        { actionType: "DISCONNECT_SLACK" },
+        { method: "POST" }
+      );
+      setSlackWebhookUrl("");
+      setSlackWorkspaceName("");
+      setSlackChannelName("");
+      setIsSlackEditing(true);
+      setSlackEnabled(false);
+    }
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -23,7 +88,7 @@ export default function NotificationSetupStep({
 
     const activeChannels = [];
     if (emailEnabled) activeChannels.push("EMAIL");
-    if (slackEnabled) activeChannels.push("SLACK");
+    if (slackEnabled && isSlackConnected) activeChannels.push("SLACK");
     if (inAppEnabled) activeChannels.push("IN_APP");
 
     if (activeChannels.length === 0) {
@@ -36,48 +101,55 @@ export default function NotificationSetupStep({
       return;
     }
 
+    if (slackEnabled && !isSlackConnected) {
+      setLocalError("Please connect a valid Slack webhook before enabling Slack alerts.");
+      return;
+    }
+
     onSubmit({
       notificationEmail: email.trim(),
       emailEnabled,
       slackEnabled,
       inAppEnabled,
       enabledNotificationTypes: activeChannels,
+      webhookUrl: slackWebhookUrl ? slackWebhookUrl.trim() : null,
+      workspaceName: slackWorkspaceName ? slackWorkspaceName.trim() : null,
+      channelName: slackChannelName ? slackChannelName.trim() : null,
     });
   };
 
-  const displayError = errorMessage || localError;
+  const displayError = errorMessage || localError || fetcher.data?.error || null;
 
   return (
     <div style={styles.container}>
-      {/* Top Header Banner matching exact screenshot cross-section */}
+      {/* Top Header Banner matching Settings aesthetic */}
       <div style={styles.header}>
-        {/* Exact multi-layered organic fluid cross-section matching design */}
+        {/* Ambient background curves */}
         <div style={styles.bannerCurves}>
-          <svg style={styles.bannerSvg} viewBox="0 0 1000 100" preserveAspectRatio="none">
-            {/* Layer 1: Ambient soft secondary wave flowing from mid-bottom */}
+          <svg
+            style={styles.bannerSvg}
+            viewBox="0 0 1000 120"
+            preserveAspectRatio="none"
+            fill="none"
+          >
             <path
-              d="M 500 100 C 540 80, 580 45, 620 15 C 640 3, 670 0, 700 0 L 1000 0 L 1000 100 Z"
-              fill="rgba(42, 14, 98, 0.32)"
+              d="M-50,20 C200,90 400,-20 650,50 C800,90 950,20 1050,40"
+              stroke="rgba(255, 255, 255, 0.12)"
+              strokeWidth="4"
+              fill="none"
             />
-
-            {/* Layer 2: Main organic curved lobe wrapping right behind tagline */}
             <path
-              d="M 605 0 C 575 20, 555 45, 560 64 C 568 82, 630 96, 730 100 L 1000 100 L 1000 0 Z"
-              fill="#331075"
-              opacity="0.75"
-            />
-
-            {/* Layer 3: Subtle ambient depth wave towards bottom right */}
-            <path
-              d="M 730 100 C 810 95, 890 92, 950 95 C 980 97, 995 98, 1000 100 L 1000 100 Z"
-              fill="rgba(25, 5, 65, 0.2)"
+              d="M-20,70 C250,130 500,10 750,80 C900,110 1000,60 1080,70"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth="6"
+              fill="none"
             />
           </svg>
         </div>
 
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
-            <img src="/Flowpacks-logo.png" alt="FlowPacks" style={styles.logoImg} />
+            <Sparkles size={22} color="#5C28D8" strokeWidth={2.2} />
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>
@@ -112,38 +184,39 @@ export default function NotificationSetupStep({
           <div style={styles.cardsGrid}>
             {/* Card 1: Email */}
             <div style={{ ...styles.channelCard, borderColor: emailEnabled ? "#4F46E5" : "#E2E8F0" }}>
-              <div style={styles.cardHeader}>
-                <div style={{ ...styles.iconBox, backgroundColor: "#EEF2FF" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
+              <div>
+                <div style={styles.cardHeader}>
+                  <div style={{ ...styles.iconBox, backgroundColor: "#EEF2FF" }}>
+                    <Mail size={22} color="#4F46E5" strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <h3 style={styles.cardTitle}>Email</h3>
+                    <p style={styles.cardSubtitle}>Receive automation alerts via email.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 style={styles.cardTitle}>Email</h3>
-                  <p style={styles.cardSubtitle}>Receive automation alerts via email.</p>
-                </div>
-              </div>
 
-              <div style={styles.cardBody}>
-                <div style={styles.fieldGroup}>
-                  <label htmlFor="notification-email-input" style={styles.fieldLabel}>Notification email</label>
-                  <input
-                    id="notification-email-input"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@store.com"
-                    disabled={!emailEnabled}
-                    style={{
-                      ...styles.textInput,
-                      opacity: emailEnabled ? 1 : 0.6,
-                      backgroundColor: emailEnabled ? "#FFFFFF" : "#F9FAFB",
-                    }}
-                  />
-                  <span style={styles.helperText}>
-                    This will be used as the default email for all automation alerts.
-                  </span>
+                <div style={styles.cardBody}>
+                  <div style={styles.fieldGroup}>
+                    <label htmlFor="notification-email-input" style={styles.fieldLabel}>
+                      Notification email
+                    </label>
+                    <input
+                      id="notification-email-input"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@store.com"
+                      disabled={!emailEnabled}
+                      style={{
+                        ...styles.textInput,
+                        opacity: emailEnabled ? 1 : 0.6,
+                        backgroundColor: emailEnabled ? "#FFFFFF" : "#F9FAFB",
+                      }}
+                    />
+                    <span style={styles.helperText}>
+                      This will be used as the default email for all automation alerts.
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -160,48 +233,169 @@ export default function NotificationSetupStep({
               </div>
             </div>
 
-            {/* Card 2: Slack (UI Mockup) */}
-            <div style={{ ...styles.channelCard, borderColor: slackEnabled ? "#10B981" : "#E2E8F0" }}>
-              <div style={styles.cardHeader}>
-                <div style={{ ...styles.iconBox, backgroundColor: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-                  <img
-                    src="/Slack_Symbol_0.svg"
-                    alt="Slack"
-                    style={{ width: "34px", height: "34px", objectFit: "contain" }}
-                  />
+            {/* Card 2: Slack (Matching Settings Page UI & Logic) */}
+            <div
+              style={{
+                ...styles.channelCard,
+                borderColor: isSlackConnected && slackEnabled ? "#10B981" : "#E2E8F0",
+              }}
+            >
+              <div>
+                <div style={styles.cardHeader}>
+                  <div
+                    style={{
+                      ...styles.iconBox,
+                      backgroundColor: "#FFF7ED",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <img
+                      src="/Slack_Symbol_0.svg"
+                      alt="Slack"
+                      style={{ width: "42px", height: "42px", objectFit: "contain" }}
+                    />
+                  </div>
+                  <div>
+                    <h3 style={styles.cardTitle}>Slack</h3>
+                    <p style={styles.cardSubtitle}>Get alerts in your Slack workspace.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 style={styles.cardTitle}>Slack</h3>
-                  <p style={styles.cardSubtitle}>Get alerts in your Slack workspace.</p>
-                </div>
-              </div>
 
-              <div style={styles.cardBody}>
-                <div style={styles.badgeRow}>
-                  <span style={styles.connectedBadge}>
-                    <span style={styles.badgeDot} />
-                    Connected
-                  </span>
-                </div>
-                <div style={styles.slackMeta}>
-                  <div>
-                    <span style={styles.metaLabel}>Workspace</span>
-                    <span style={styles.metaValue}>{shopName || "Store"} Team</span>
-                  </div>
-                  <div>
-                    <span style={styles.metaLabel}>Default channel</span>
-                    <span style={styles.metaValue}>#flowpacks-alerts</span>
-                  </div>
+                <div style={styles.cardBody}>
+                  {/* Connected Readout State */}
+                  {isSlackConnected && !isSlackEditing ? (
+                    <div>
+                      <div style={styles.badgeRow}>
+                        <span style={styles.connectedBadge}>
+                          <span style={styles.badgeDot} />
+                          Connected
+                        </span>
+                      </div>
+
+                      <div style={styles.slackMetaGrid}>
+                        <div>
+                          <span style={styles.metaLabel}>Workspace</span>
+                          <span style={styles.metaValue} title={slackWorkspaceName || "Slack Workspace"}>
+                            {slackWorkspaceName || "Slack Workspace"}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={styles.metaLabel}>Default channel</span>
+                          <span style={styles.metaValue} title={slackChannelName || "#general"}>
+                            {slackChannelName || "#general"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={styles.slackActionBtns}>
+                        <button
+                          type="button"
+                          style={styles.btnSecondary}
+                          onClick={() => setIsSlackEditing(true)}
+                        >
+                          Change channel
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.btnDanger}
+                          onClick={handleDisconnectSlack}
+                          disabled={isDisconnectingSlack}
+                        >
+                          {isDisconnectingSlack ? "Disconnecting..." : "Disconnect"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Disconnected / Editing Form */
+                    <div>
+                      <div style={styles.fieldGroup}>
+                        <label style={styles.fieldLabel}>Slack Incoming Webhook URL</label>
+                        <input
+                          type="url"
+                          value={slackWebhookUrl}
+                          onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                          placeholder="https://hooks.slack.com/services/..."
+                          style={styles.textInput}
+                          disabled={isConnectingSlack}
+                          required={slackEnabled}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.fieldLabel}>Workspace name</label>
+                          <input
+                            type="text"
+                            value={slackWorkspaceName}
+                            onChange={(e) => setSlackWorkspaceName(e.target.value)}
+                            placeholder="e.g. Stride Stores"
+                            style={styles.textInput}
+                            disabled={isConnectingSlack}
+                          />
+                        </div>
+                        <div style={styles.fieldGroup}>
+                          <label style={styles.fieldLabel}>Default channel</label>
+                          <input
+                            type="text"
+                            value={slackChannelName}
+                            onChange={(e) => setSlackChannelName(e.target.value)}
+                            placeholder="e.g. #flowpacks-alerts"
+                            style={styles.textInput}
+                            disabled={isConnectingSlack}
+                          />
+                        </div>
+                      </div>
+
+                      <p style={styles.helperText}>
+                        Need a webhook? Create an Incoming Webhook in your Slack workspace.
+                      </p>
+
+                      <div style={{ ...styles.slackActionBtns, marginTop: "12px" }}>
+                        {isSlackConnected && isSlackEditing && (
+                          <button
+                            type="button"
+                            style={styles.btnSecondary}
+                            onClick={() => setIsSlackEditing(false)}
+                            disabled={isConnectingSlack}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          style={styles.btnPrimary}
+                          onClick={handleConnectSlack}
+                          disabled={isConnectingSlack || !slackWebhookUrl.trim()}
+                        >
+                          {isConnectingSlack
+                            ? "Testing & Connecting..."
+                            : isSlackConnected
+                            ? "Save changes"
+                            : "Connect Slack"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div style={styles.cardFooter}>
-                <label style={styles.toggleRow}>
+                <label
+                  style={{
+                    ...styles.toggleRow,
+                    opacity: isSlackConnected ? 1 : 0.6,
+                    cursor: isSlackConnected ? "pointer" : "not-allowed",
+                  }}
+                >
                   <span style={styles.toggleLabel}>Enable Slack alerts</span>
                   <input
                     type="checkbox"
-                    checked={slackEnabled}
-                    onChange={(e) => setSlackEnabled(e.target.checked)}
+                    checked={slackEnabled && isSlackConnected}
+                    onChange={(e) => {
+                      if (!isSlackConnected) return;
+                      setSlackEnabled(e.target.checked);
+                    }}
+                    disabled={!isSlackConnected}
                     style={styles.checkboxInput}
                   />
                 </label>
@@ -210,29 +404,28 @@ export default function NotificationSetupStep({
 
             {/* Card 3: In-App Notifications */}
             <div style={{ ...styles.channelCard, borderColor: inAppEnabled ? "#7C3AED" : "#E2E8F0" }}>
-              <div style={styles.cardHeader}>
-                <div style={{ ...styles.iconBox, backgroundColor: "#F5F3FF" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                  </svg>
+              <div>
+                <div style={styles.cardHeader}>
+                  <div style={{ ...styles.iconBox, backgroundColor: "#F5F3FF" }}>
+                    <Bell size={22} color="#7C3AED" strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <h3 style={styles.cardTitle}>In-app notifications</h3>
+                    <p style={styles.cardSubtitle}>View alerts directly in FlowPacks.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 style={styles.cardTitle}>In-app notifications</h3>
-                  <p style={styles.cardSubtitle}>View alerts directly in FlowPacks.</p>
-                </div>
-              </div>
 
-              <div style={styles.cardBody}>
-                <div style={styles.badgeRow}>
-                  <span style={styles.inAppBadge}>
-                    <span style={styles.inAppBadgeDot} />
-                    Enabled
-                  </span>
+                <div style={styles.cardBody}>
+                  <div style={styles.badgeRow}>
+                    <span style={styles.inAppBadge}>
+                      <span style={styles.inAppBadgeDot} />
+                      Enabled
+                    </span>
+                  </div>
+                  <p style={styles.inAppDesc}>
+                    In-app notifications are available automatically. Use toggle below to enable or disable audit logs.
+                  </p>
                 </div>
-                <p style={styles.inAppDesc}>
-                  In-app notifications are available automatically. Use toggle below to enable or disable audit logs.
-                </p>
               </div>
 
               <div style={styles.cardFooter}>
@@ -257,10 +450,7 @@ export default function NotificationSetupStep({
               style={styles.backButton}
               disabled={isSubmitting}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
+              <ArrowLeft size={16} strokeWidth={2.5} />
               <span>Back</span>
             </button>
 
@@ -271,18 +461,13 @@ export default function NotificationSetupStep({
                 ...styles.submitButton,
                 opacity: isSubmitting ? 0.7 : 1,
               }}
-              onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = "#4338CA")}
-              onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = "#4F46E5")}
             >
               {isSubmitting ? (
                 <span>Saving & Initializing...</span>
               ) : (
                 <>
                   <span>Save & Go to Library</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
+                  <ArrowRight size={18} strokeWidth={2.5} />
                 </>
               )}
             </button>
@@ -299,20 +484,21 @@ const styles = {
     margin: "0 auto",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     paddingBottom: "32px",
+    boxSizing: "border-box",
   },
   header: {
     position: "relative",
-    background: "linear-gradient(90deg, #5B29D7 0%, #6835E3 40%, #5824CE 100%)",
+    background: "linear-gradient(90deg, #5925D8 0%, #632DE0 55%, #5924CE 100%)",
     borderRadius: "14px",
-    height: "72px",
-    padding: "0 36px",
+    minHeight: "72px",
+    padding: "16px 28px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     color: "#FFFFFF",
-    boxShadow: "0 8px 24px rgba(88, 36, 206, 0.25)",
+    boxShadow: "0 8px 24px rgba(88, 36, 206, 0.22)",
     overflow: "hidden",
-    marginBottom: "16px",
+    marginBottom: "24px",
     boxSizing: "border-box",
   },
   bannerCurves: {
@@ -348,14 +534,9 @@ const styles = {
     boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
     flexShrink: 0,
   },
-  logoImg: {
-    width: "28px",
-    height: "28px",
-    objectFit: "contain",
-  },
   brandTitle: {
-    fontSize: "22px",
-    fontWeight: "600",
+    fontSize: "20px",
+    fontWeight: "700",
     letterSpacing: "-0.01em",
     color: "#FFFFFF",
   },
@@ -366,7 +547,7 @@ const styles = {
   stepIndicator: {
     fontSize: "13px",
     fontWeight: "600",
-    backgroundColor: "rgba(255, 255, 255, 0.22)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     padding: "6px 14px",
     borderRadius: "20px",
     letterSpacing: "0.02em",
@@ -381,15 +562,15 @@ const styles = {
     marginBottom: "28px",
   },
   heading: {
-    fontSize: "26px",
+    fontSize: "24px",
     fontWeight: "800",
     color: "#111827",
-    margin: "0 0 8px 0",
+    margin: "0 0 6px 0",
     letterSpacing: "-0.02em",
   },
   subheading: {
-    fontSize: "15px",
-    color: "#4B5563",
+    fontSize: "14px",
+    color: "#6B7280",
     margin: 0,
   },
   errorBanner: {
@@ -421,12 +602,14 @@ const styles = {
     justifyContent: "space-between",
     boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
     transition: "border-color 0.2s ease",
+    minHeight: "260px",
+    boxSizing: "border-box",
   },
   cardHeader: {
     display: "flex",
     alignItems: "flex-start",
     gap: "14px",
-    marginBottom: "18px",
+    marginBottom: "16px",
   },
   iconBox: {
     width: "44px",
@@ -441,7 +624,7 @@ const styles = {
     fontSize: "16px",
     fontWeight: "700",
     color: "#111827",
-    margin: "0 0 4px 0",
+    margin: "0 0 3px 0",
   },
   cardSubtitle: {
     fontSize: "13px",
@@ -450,7 +633,6 @@ const styles = {
     lineHeight: 1.4,
   },
   cardBody: {
-    flex: 1,
     marginBottom: "18px",
   },
   fieldGroup: {
@@ -459,16 +641,16 @@ const styles = {
     gap: "6px",
   },
   fieldLabel: {
-    fontSize: "13px",
+    fontSize: "12.5px",
     fontWeight: "600",
     color: "#374151",
   },
   textInput: {
     width: "100%",
-    padding: "10px 12px",
+    padding: "9px 12px",
     borderRadius: "8px",
     border: "1px solid #D1D5DB",
-    fontSize: "14px",
+    fontSize: "13.5px",
     color: "#111827",
     boxSizing: "border-box",
     outline: "none",
@@ -477,6 +659,8 @@ const styles = {
     fontSize: "12px",
     color: "#6B7280",
     lineHeight: 1.3,
+    marginTop: "6px",
+    display: "block",
   },
   badgeRow: {
     marginBottom: "12px",
@@ -498,11 +682,15 @@ const styles = {
     borderRadius: "50%",
     backgroundColor: "#10B981",
   },
-  slackMeta: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    fontSize: "13px",
+  slackMetaGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    backgroundColor: "#F9FAFB",
+    borderRadius: "8px",
+    padding: "10px 12px",
+    marginBottom: "14px",
+    border: "1px solid #E5E7EB",
   },
   metaLabel: {
     color: "#6B7280",
@@ -510,10 +698,52 @@ const styles = {
     fontSize: "11px",
     textTransform: "uppercase",
     fontWeight: "600",
+    marginBottom: "2px",
   },
   metaValue: {
     color: "#1F2937",
     fontWeight: "600",
+    fontSize: "13px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    display: "block",
+  },
+  slackActionBtns: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  btnPrimary: {
+    backgroundColor: "#5C28D8",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "6px",
+    padding: "7px 14px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease",
+  },
+  btnSecondary: {
+    backgroundColor: "#FFFFFF",
+    color: "#374151",
+    border: "1px solid #D1D5DB",
+    borderRadius: "6px",
+    padding: "7px 14px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  btnDanger: {
+    backgroundColor: "#FEF2F2",
+    color: "#DC2626",
+    border: "1px solid #FECACA",
+    borderRadius: "6px",
+    padding: "7px 14px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
   },
   inAppBadge: {
     display: "inline-flex",
@@ -546,7 +776,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    cursor: "pointer",
     userSelect: "none",
   },
   toggleLabel: {
@@ -557,7 +786,7 @@ const styles = {
   checkboxInput: {
     width: "18px",
     height: "18px",
-    accentColor: "#4F46E5",
+    accentColor: "#5C28D8",
     cursor: "pointer",
   },
   actionFooter: {
@@ -584,7 +813,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#5C28D8",
     color: "#FFFFFF",
     border: "none",
     borderRadius: "8px",

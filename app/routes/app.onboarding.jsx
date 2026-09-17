@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLoaderData, useFetcher, redirect } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
-import { getOrCreateMerchantSettings, completeMerchantOnboarding } from "../services/merchant.server";
+import { getOrCreateMerchantSettings, completeMerchantOnboarding, connectSlackWebhook, disconnectSlackWebhook } from "../services/merchant.server";
 import WelcomeStep from "../components/onboarding/WelcomeStep";
 import NotificationSetupStep from "../components/onboarding/NotificationSetupStep";
 
@@ -43,8 +43,45 @@ export const action = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const formData = await request.formData();
 
+  const actionType = formData.get("actionType") || formData.get("intent");
+
+  if (actionType === "CONNECT_SLACK") {
+    const webhookUrl = formData.get("webhookUrl");
+    const workspaceName = formData.get("workspaceName");
+    const channelName = formData.get("channelName");
+
+    try {
+      const updated = await connectSlackWebhook(session.shop, {
+        webhookUrl,
+        workspaceName,
+        channelName,
+      });
+      return { success: true, message: "Slack connected successfully! 🚀", updated };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || "Failed to connect Slack webhook. Please try again.",
+      };
+    }
+  }
+
+  if (actionType === "DISCONNECT_SLACK") {
+    try {
+      const updated = await disconnectSlackWebhook(session.shop);
+      return { success: true, message: "Slack disconnected.", updated };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || "Failed to disconnect Slack webhook. Please try again.",
+      };
+    }
+  }
+
   const notificationEmail = formData.get("notificationEmail");
   const rawChannels = formData.get("enabledNotificationTypes");
+  const webhookUrl = formData.get("webhookUrl");
+  const workspaceName = formData.get("workspaceName");
+  const channelName = formData.get("channelName");
 
   let enabledNotificationTypes = [];
   try {
@@ -57,6 +94,9 @@ export const action = async ({ request }) => {
     await completeMerchantOnboarding(session.shop, {
       notificationEmail,
       enabledNotificationTypes,
+      webhookUrl,
+      workspaceName,
+      channelName,
     });
 
     return redirect("/app/automation-library");
@@ -81,6 +121,9 @@ export default function OnboardingRoute() {
       {
         notificationEmail: data.notificationEmail,
         enabledNotificationTypes: JSON.stringify(data.enabledNotificationTypes),
+        ...(data.webhookUrl ? { webhookUrl: data.webhookUrl } : {}),
+        ...(data.workspaceName ? { workspaceName: data.workspaceName } : {}),
+        ...(data.channelName ? { channelName: data.channelName } : {}),
       },
       { method: "POST" }
     );

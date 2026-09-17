@@ -38,11 +38,15 @@ export async function getOrCreateMerchantSettings(shopDomain, defaultEmail = nul
 /**
  * Completes merchant onboarding, updates notification channels,
  * and automatically initializes default workflow settings for all 6 catalog recipes.
+ * Uses an atomic database transaction to guarantee consistency.
  */
 export async function completeMerchantOnboarding(shopDomain, data) {
   try {
     const notificationEmail = data?.notificationEmail?.trim();
     const enabledNotificationTypes = data?.enabledNotificationTypes;
+    const webhookUrl = data?.webhookUrl ? data.webhookUrl.trim() : null;
+    const workspaceName = data?.workspaceName ? data.workspaceName.trim() : null;
+    const channelName = data?.channelName ? data.channelName.trim() : null;
 
     if (!Array.isArray(enabledNotificationTypes) || enabledNotificationTypes.length === 0) {
       throw new Error("At least one notification channel must remain active.");
@@ -54,43 +58,73 @@ export async function completeMerchantOnboarding(shopDomain, data) {
       }
     }
 
-    // 1. Update Merchant Settings
-    const updatedSettings = await db.merchantSettings.update({
+    // Check existing settings for Slack configuration
+    const existingMerchant = await db.merchantSettings.findUnique({
       where: { shop: shopDomain },
-      data: {
-        notificationEmail: notificationEmail || null,
-        enabledNotificationTypes,
-        hasCompletedOnboarding: true,
-      },
     });
 
-    // 2. Automatically seed/upsert default Workflow Settings for all catalog recipes
-    const recipes = getCatalogList();
-    for (const recipe of recipes) {
-      const defaultThresholds = getDefaultThresholds(recipe.slug);
-      const defaultChannel = resolveDeliveryChannel(recipe.slug, enabledNotificationTypes, "EMAIL");
+    if (enabledNotificationTypes.includes("SLACK")) {
+      const hasExistingSlack = Boolean(existingMerchant?.slackWebhookUrl);
+      const hasNewWebhook = Boolean(webhookUrl && webhookUrl.startsWith("https://"));
 
-      await db.workflowSetting.upsert({
-        where: {
-          shop_recipeSlug: {
-            shop: shopDomain,
-            recipeSlug: recipe.slug,
-          },
-        },
-        create: {
-          shop: shopDomain,
-          recipeSlug: recipe.slug,
-          isActive: false,
-          deliveryChannel: defaultChannel || "EMAIL",
-          config: defaultThresholds,
-        },
-        update: {
-          deliveryChannel: defaultChannel || "EMAIL",
-        },
-      });
+      if (!hasExistingSlack && !hasNewWebhook) {
+        throw new Error("Please connect a valid Slack webhook URL before enabling Slack alerts.");
+      }
     }
 
-    return updatedSettings;
+    // Atomic Database Transaction for Merchant Settings + 6 Workflow Settings
+    const result = await db.$transaction(async (tx) => {
+      // 1. Update Merchant Settings
+      const updatedSettings = await tx.merchantSettings.update({
+        where: { shop: shopDomain },
+        data: {
+          notificationEmail: notificationEmail || null,
+          enabledNotificationTypes,
+          hasCompletedOnboarding: true,
+          ...(webhookUrl
+            ? {
+                slackWebhookUrl: webhookUrl,
+                slackWorkspaceName: workspaceName || "Slack Workspace",
+                slackChannelName: channelName || "#general",
+              }
+            : {}),
+        },
+      });
+
+      // 2. Automatically seed/upsert default Workflow Settings for all catalog recipes
+      const recipes = getCatalogList();
+      for (const recipe of recipes) {
+        const defaultThresholds = getDefaultThresholds(recipe.slug);
+        const defaultChannel = resolveDeliveryChannel(
+          recipe.slug,
+          enabledNotificationTypes,
+          "EMAIL"
+        );
+
+        await tx.workflowSetting.upsert({
+          where: {
+            shop_recipeSlug: {
+              shop: shopDomain,
+              recipeSlug: recipe.slug,
+            },
+          },
+          create: {
+            shop: shopDomain,
+            recipeSlug: recipe.slug,
+            isActive: false,
+            deliveryChannel: defaultChannel || "EMAIL",
+            config: defaultThresholds,
+          },
+          update: {
+            deliveryChannel: defaultChannel || "EMAIL",
+          },
+        });
+      }
+
+      return updatedSettings;
+    });
+
+    return result;
   } catch (err) {
     console.error("Error completing merchant onboarding:", err);
     throw err;
