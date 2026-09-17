@@ -47,6 +47,7 @@ async function handleCronExecution(request) {
       shopsToProcess.push(...activeWorkflows.map((w) => w.shop));
     }
 
+    const isForce = url.searchParams.get("force") === "true";
     const executionSummary = [];
 
     for (const shop of shopsToProcess) {
@@ -54,19 +55,32 @@ async function handleCronExecution(request) {
         const { admin } = await unauthenticated.admin(shop);
 
         if (targetRecipe) {
-          const result = await runWorkflow(admin, shop, targetRecipe, { force: true });
+          const result = await runWorkflow(admin, shop, targetRecipe, { force: isForce });
+          const alerted = Boolean(result.shouldAlert && !result.deduplicated);
+          const deduplicated = Boolean(result.deduplicated);
           executionSummary.push({
             shop,
             recipe: targetRecipe,
             status: "completed",
+            alerted,
+            deduplicated,
             result,
           });
         } else {
           const results = await runAllActiveWorkflows(admin, shop);
+          const totalExecuted = results.length;
+          const alertedCount = results.filter((r) => r.shouldAlert && !r.deduplicated).length;
+          const deduplicatedCount = results.filter((r) => r.deduplicated).length;
+          const noAlertCount = results.filter((r) => !r.shouldAlert).length;
           executionSummary.push({
             shop,
             status: "completed",
-            activeWorkflowsExecuted: results.length,
+            activeWorkflowsExecuted: totalExecuted,
+            summary: {
+              alerted: alertedCount,
+              deduplicated: deduplicatedCount,
+              noAlert: noAlertCount,
+            },
             results,
           });
         }

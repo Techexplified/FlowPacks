@@ -4,6 +4,7 @@ import { dispatchNotification, sendSlackNotification } from "../services/notifie
 import { createActivityLog } from "../services/activity.server";
 import { evaluateRecipe } from "../services/evaluator.server";
 import { getDefaultThresholds, getAvailableChannels, getRecipeBySlug } from "../libs/recipes.config";
+import { generateFingerprint } from "../utils/fingerprint";
 
 export async function runWorkflow(admin, shopDomain, recipeSlug, options = { force: false }) {
     try {
@@ -53,32 +54,93 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
         const evaluationResult = await evaluateRecipe(datasetResult, channel);
 
         if (evaluationResult.shouldAlert === true) {
+            const currentFingerprint = generateFingerprint(recipeSlug, evaluationResult.flaggedItems);
+
+            // Only deduplicate if NOT a forced manual run and fingerprint matches last alert
+            const isDuplicate = !options.force && workflowSetting?.lastFingerprint === currentFingerprint;
+
+            if (isDuplicate) {
+                // 1. Update lastRunAt timestamp only
+                await db.workflowSetting.upsert({
+                    where: { shop_recipeSlug: { shop: shopDomain, recipeSlug } },
+                    update: { lastRunAt: new Date() },
+                    create: {
+                        shop: shopDomain,
+                        recipeSlug,
+                        isActive: true,
+                        lastRunAt: new Date(),
+                        lastFingerprint: currentFingerprint,
+                    },
+                });
+
+                // 2. Return deduplicated status without sending Slack/Email
+                return {
+                    success: true,
+                    shouldAlert: true,
+                    deduplicated: true,
+                    reason: "Suppressed duplicate notification (fingerprint unchanged).",
+                    evaluationResult,
+                };
+            }
+
+            // If NOT duplicate (new items flagged or forced):
+            // 1. Dispatch external notification (Slack / In-App / Email)
             let notificationResult;
             if (channel === "SLACK" && merchant?.slackWebhookUrl) {
-                notificationResult = await sendSlackNotification(
-                    merchant.slackWebhookUrl,
-                    evaluationResult,
-                    shopDomain
-                );
+                notificationResult = await sendSlackNotification(merchant.slackWebhookUrl, evaluationResult, shopDomain);
             } else {
                 notificationResult = await dispatchNotification(shopDomain, evaluationResult);
             }
 
+            // 2. Update DB with lastRunAt, lastAlertedAt, and the new lastFingerprint
+            await db.workflowSetting.upsert({
+                where: { shop_recipeSlug: { shop: shopDomain, recipeSlug } },
+                update: {
+                    lastRunAt: new Date(),
+                    lastAlertedAt: new Date(),
+                    lastFingerprint: currentFingerprint,
+                },
+                create: {
+                    shop: shopDomain,
+                    recipeSlug,
+                    isActive: true,
+                    lastRunAt: new Date(),
+                    lastAlertedAt: new Date(),
+                    lastFingerprint: currentFingerprint,
+                },
+            });
+
             return {
                 success: true,
                 shouldAlert: true,
+                deduplicated: false,
                 evaluationResult,
                 notificationResult,
             };
+        } else {
+            // Update lastRunAt, and clear lastFingerprint so if an issue re-appears later, it alerts fresh
+            await db.workflowSetting.upsert({
+                where: { shop_recipeSlug: { shop: shopDomain, recipeSlug } },
+                update: {
+                    lastRunAt: new Date(),
+                    lastFingerprint: null,
+                },
+                create: {
+                    shop: shopDomain,
+                    recipeSlug,
+                    isActive: true,
+                    lastRunAt: new Date(),
+                    lastFingerprint: null,
+                },
+            });
+
+            return {
+                success: true,
+                shouldAlert: false,
+                evaluationResult,
+                reason: "No alert triggered",
+            };
         }
-
-        return {
-            success: true,
-            shouldAlert: false,
-            evaluationResult,
-            reason: "No alert triggered",
-        };
-
     } catch (err) {
         console.error(`Error running workflow ${recipeSlug}:`, err);
         try {
