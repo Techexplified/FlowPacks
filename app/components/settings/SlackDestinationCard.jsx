@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { settingsStyles } from "../../styles/settings.styles";
+import SlackGuideModal from "../common/SlackGuideModal";
 
 /**
  * Card 2: Slack destination configuration with public Slack logo,
@@ -15,6 +16,7 @@ export default function SlackDestinationCard({
   const fetcher = useFetcher();
   const isConnected = Boolean(slackWebhookUrl);
 
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(slackWebhookUrl || "");
   const [workspaceName, setWorkspaceName] = useState(slackWorkspaceName || "");
@@ -115,7 +117,7 @@ export default function SlackDestinationCard({
             <p style={settingsStyles.cardDesc}>
               Get alerts in your Slack workspace.
             </p>
-            {isConnected && !isEditing && (
+            {isConnected && !isEditing ? (
               active ? (
                 <span style={settingsStyles.badgeConnected}>
                   ● Connected
@@ -131,6 +133,10 @@ export default function SlackDestinationCard({
                   ○ Paused
                 </span>
               )
+            ) : (
+              <span style={settingsStyles.badgeDisabled}>
+                ○ Disconnected
+              </span>
             )}
           </div>
         </div>
@@ -187,6 +193,36 @@ export default function SlackDestinationCard({
                 required
                 disabled={isConnecting}
               />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  marginTop: "6px",
+                  fontSize: "11.5px",
+                  color: "#6B7280",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>Don't have a webhook URL?</span>
+                <button
+                  type="button"
+                  onClick={() => setIsGuideOpen(true)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#5C28D8",
+                    fontWeight: "600",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    fontSize: "11.5px",
+                    display: "inline",
+                  }}
+                >
+                  View step-by-step guide →
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
@@ -214,10 +250,6 @@ export default function SlackDestinationCard({
               </div>
             </div>
 
-            <p style={settingsStyles.helperText}>
-              Need a webhook? Create an Incoming Webhook in your Slack workspace.
-            </p>
-
             <div style={settingsStyles.cardActions}>
               {isEditing && (
                 <button
@@ -244,6 +276,11 @@ export default function SlackDestinationCard({
           </form>
         )}
       </div>
+
+      <SlackGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
 
       {/* 1-Click Toggle Switch for Enabling/Disabling Slack Alerts */}
       {isConnected && !isEditing && (

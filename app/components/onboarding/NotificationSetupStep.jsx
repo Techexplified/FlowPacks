@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { Sparkles, Mail, Bell, ArrowLeft, ArrowRight } from "lucide-react";
+import SlackGuideModal from "../common/SlackGuideModal";
 
 export default function NotificationSetupStep({
   defaultEmail = "",
@@ -24,6 +25,7 @@ export default function NotificationSetupStep({
   const [slackWorkspaceName, setSlackWorkspaceName] = useState(initialSettings?.slackWorkspaceName || "");
   const [slackChannelName, setSlackChannelName] = useState(initialSettings?.slackChannelName || "");
   const [isSlackEditing, setIsSlackEditing] = useState(!initialSettings?.slackWebhookUrl);
+  const [isSlackGuideOpen, setIsSlackGuideOpen] = useState(false);
 
   const [localError, setLocalError] = useState("");
 
@@ -196,6 +198,42 @@ export default function NotificationSetupStep({
                 </div>
 
                 <div style={styles.cardBody}>
+                  <div style={styles.badgeRow}>
+                    {emailEnabled ? (
+                      <span
+                        style={{
+                          ...styles.inAppBadge,
+                          backgroundColor: "#EEF2FF",
+                          color: "#4F46E5",
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...styles.inAppBadgeDot,
+                            backgroundColor: "#4F46E5",
+                          }}
+                        />
+                        Enabled
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          ...styles.inAppBadge,
+                          backgroundColor: "#F3F4F6",
+                          color: "#6B7280",
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...styles.inAppBadgeDot,
+                            backgroundColor: "#9CA3AF",
+                          }}
+                        />
+                        Disabled
+                      </span>
+                    )}
+                  </div>
+
                   <div style={styles.fieldGroup}>
                     <label htmlFor="notification-email-input" style={styles.fieldLabel}>
                       Notification email
@@ -319,6 +357,36 @@ export default function NotificationSetupStep({
                           disabled={isConnectingSlack}
                           required={slackEnabled}
                         />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            marginTop: "6px",
+                            fontSize: "11.5px",
+                            color: "#6B7280",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <span>Don't have a webhook URL?</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsSlackGuideOpen(true)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              padding: 0,
+                              color: "#5C28D8",
+                              fontWeight: "600",
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                              fontSize: "11.5px",
+                              display: "inline",
+                            }}
+                          >
+                            View step-by-step guide →
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
@@ -345,10 +413,6 @@ export default function NotificationSetupStep({
                           />
                         </div>
                       </div>
-
-                      <p style={styles.helperText}>
-                        Need a webhook? Create an Incoming Webhook in your Slack workspace.
-                      </p>
 
                       <div style={{ ...styles.slackActionBtns, marginTop: "12px" }}>
                         {isSlackConnected && isSlackEditing && (
@@ -417,10 +481,28 @@ export default function NotificationSetupStep({
 
                 <div style={styles.cardBody}>
                   <div style={styles.badgeRow}>
-                    <span style={styles.inAppBadge}>
-                      <span style={styles.inAppBadgeDot} />
-                      Enabled
-                    </span>
+                    {inAppEnabled ? (
+                      <span style={styles.inAppBadge}>
+                        <span style={styles.inAppBadgeDot} />
+                        Enabled
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          ...styles.inAppBadge,
+                          backgroundColor: "#F3F4F6",
+                          color: "#6B7280",
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...styles.inAppBadgeDot,
+                            backgroundColor: "#9CA3AF",
+                          }}
+                        />
+                        Disabled
+                      </span>
+                    )}
                   </div>
                   <p style={styles.inAppDesc}>
                     In-app notifications are available automatically. Use toggle below to enable or disable audit logs.
@@ -474,13 +556,18 @@ export default function NotificationSetupStep({
           </div>
         </form>
       </div>
+
+      <SlackGuideModal
+        isOpen={isSlackGuideOpen}
+        onClose={() => setIsSlackGuideOpen(false)}
+      />
     </div>
   );
 }
 
 const styles = {
   container: {
-    maxWidth: "1080px",
+    maxWidth: "1160px",
     margin: "0 auto",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     paddingBottom: "32px",
@@ -588,21 +675,21 @@ const styles = {
   },
   cardsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))",
     gap: "20px",
     marginBottom: "32px",
   },
   channelCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: "12px",
+    borderRadius: "14px",
     border: "2px solid #E2E8F0",
-    padding: "20px",
+    padding: "22px 20px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
     boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
     transition: "border-color 0.2s ease",
-    minHeight: "260px",
+    minHeight: "290px",
     boxSizing: "border-box",
   },
   cardHeader: {
@@ -610,6 +697,7 @@ const styles = {
     alignItems: "flex-start",
     gap: "14px",
     marginBottom: "16px",
+    minHeight: "56px",
   },
   iconBox: {
     width: "44px",

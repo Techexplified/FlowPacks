@@ -4,7 +4,7 @@
  */
 export const settingsStyles = {
   container: {
-    maxWidth: "1080px",
+    maxWidth: "1160px",
     margin: "0 auto",
     padding: "24px 20px 48px 20px",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
@@ -51,6 +51,10 @@ export const settingsStyles = {
     width: "100%",
     height: "100%",
     pointerEvents: "none",
+  },
+  bannerSvg: {
+    width: "100%",
+    height: "100%",
   },
   brandGroup: {
     position: "relative",
@@ -110,20 +114,20 @@ export const settingsStyles = {
   },
   destinationsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))",
-    gap: "16px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))",
+    gap: "20px",
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: "12px",
+    borderRadius: "14px",
     border: "1px solid #E5E7EB",
-    padding: "20px",
+    padding: "22px 20px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
     transition: "box-shadow 0.15s ease",
-    minHeight: "220px",
+    minHeight: "290px",
     boxSizing: "border-box",
   },
   cardTop: {
@@ -131,6 +135,7 @@ export const settingsStyles = {
     gap: "12px",
     alignItems: "flex-start",
     marginBottom: "16px",
+    minHeight: "56px",
   },
   iconBox: {
     width: "40px",

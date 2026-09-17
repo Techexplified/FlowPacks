@@ -5,7 +5,10 @@ import { settingsStyles } from "../../styles/settings.styles";
 /**
  * Card 3: In-app notifications destination configuration with 1-click toggle.
  */
-export default function InAppDestinationCard({ isEnabled = true }) {
+export default function InAppDestinationCard({
+  isEnabled = true,
+  isSlackConnected = true,
+}) {
   const fetcher = useFetcher();
 
   const isPending =
@@ -69,7 +72,15 @@ export default function InAppDestinationCard({ isEnabled = true }) {
           </div>
         </div>
 
-        <p style={{ ...settingsStyles.helperText, fontSize: "12px", color: "#4B5563", margin: "10px 0" }}>
+        <p
+          style={{
+            ...settingsStyles.helperText,
+            fontSize: "12.5px",
+            color: "#4B5563",
+            lineHeight: "1.45",
+            margin: "10px 0",
+          }}
+        >
           In-app notifications are available automatically. Use the toggle below to enable or disable them.
         </p>
       </div>

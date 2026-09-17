@@ -126,7 +126,10 @@ export default function SettingsPage() {
           />
 
           {/* Card 3: In-app notifications */}
-          <InAppDestinationCard isEnabled={isInAppEnabled} />
+          <InAppDestinationCard
+            isEnabled={isInAppEnabled}
+            isSlackConnected={Boolean(settings?.slackWebhookUrl)}
+          />
         </div>
       </div>
     </div>
