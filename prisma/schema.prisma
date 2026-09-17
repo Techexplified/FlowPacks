@@ -41,9 +41,6 @@ model MerchantSettings {
   slackWorkspaceName       String?
   slackChannelName         String?
   enabledNotificationTypes String[]          @default(["EMAIL", "SLACK", "IN_APP"])
-  alertOnTriggered         Boolean           @default(true)
-  alertOnFailed            Boolean           @default(true)
-  alertWeeklyDigest        Boolean           @default(true)
   hasCompletedOnboarding   Boolean           @default(false)
   updatedAt                DateTime          @updatedAt
   createdAt                DateTime          @default(now())

@@ -424,24 +424,6 @@ export async function toggleInAppNotifications(shop, isEnabled) {
   }
 }
 
-// Update notification alert preferences (checkboxes)
-export async function updateAlertPreferences(shop, { alertOnTriggered, alertOnFailed, alertWeeklyDigest }) {
-  try {
-    const updatedSettings = await db.merchantSettings.update({
-      where: { shop },
-      data: {
-        ...(alertOnTriggered !== undefined ? { alertOnTriggered: Boolean(alertOnTriggered) } : {}),
-        ...(alertOnFailed !== undefined ? { alertOnFailed: Boolean(alertOnFailed) } : {}),
-        ...(alertWeeklyDigest !== undefined ? { alertWeeklyDigest: Boolean(alertWeeklyDigest) } : {}),
-      },
-    });
-
-    return updatedSettings;
-  } catch (err) {
-    console.error("Error updating alert preferences:", err);
-    throw err;
-  }
-}
 
 // Toggle any notification channel (EMAIL, SLACK, IN_APP) independently
 export async function toggleChannelNotification(shop, channelType, isEnabled) {
