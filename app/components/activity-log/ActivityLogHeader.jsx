@@ -54,14 +54,14 @@ export default function ActivityLogHeader({
       <h1 style={activityLogStyles.pageTitle}>Activity log</h1>
 
       <div style={activityLogStyles.controlsGroup}>
-        {/* Test Run Button */}
+        {/* Run On-Demand Audit Button */}
         <button
           type="button"
           style={getTestRunBtnStyle()}
           onClick={onOpenTestRun}
           onMouseEnter={() => setIsTestRunHovered(true)}
           onMouseLeave={() => setIsTestRunHovered(false)}
-          title="Trigger a test run for any recipe"
+          title="Trigger an instant on-demand audit for any automation recipe"
         >
           <svg
             width="13"
@@ -75,7 +75,7 @@ export default function ActivityLogHeader({
           >
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
-          <span>Test Run</span>
+          <span>Run On-Demand Audit</span>
         </button>
 
         {/* Enhanced Mark All as Read Button */}

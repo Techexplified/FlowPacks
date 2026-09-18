@@ -63,6 +63,7 @@ export default function TestRunModal({
         style={activityLogStyles.modalContent}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Modal Header */}
         <div style={activityLogStyles.modalHeader}>
           <div style={activityLogStyles.modalTitleGroup}>
             <div style={{ ...activityLogStyles.iconBox, width: "32px", height: "32px" }}>
@@ -70,7 +71,9 @@ export default function TestRunModal({
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </div>
-            <h3 style={activityLogStyles.modalTitle}>Manual Automation Runner</h3>
+            <div>
+              <h3 style={activityLogStyles.modalTitle}>On-Demand Store Audit</h3>
+            </div>
           </div>
           <button
             type="button"
@@ -83,9 +86,25 @@ export default function TestRunModal({
 
         <form onSubmit={handleSubmit}>
           <div style={activityLogStyles.modalBody}>
+            
+            {/* Reassuring Background Automation Explainer Banner */}
+            <div style={activityLogStyles.reassuranceBanner}>
+              <div style={{ flexShrink: 0, marginTop: "1px" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              </div>
+              <p style={activityLogStyles.reassuranceText}>
+                <strong>Automated Monitoring Active:</strong> FlowPacks evaluates active automations in the background on schedule. You can trigger an on-demand audit here anytime to inspect live metrics.
+              </p>
+            </div>
+
+            {/* Select Recipe Dropdown */}
             <div style={activityLogStyles.formGroup}>
               <label style={activityLogStyles.formLabel}>
-                Select Automation to Test
+                Select Automation to Audit
               </label>
               <select
                 value={selectedRecipeSlug}
@@ -101,6 +120,7 @@ export default function TestRunModal({
               </select>
             </div>
 
+            {/* Recipe Info & Status Card */}
             {currentRecipe && (
               <div style={activityLogStyles.recipeInfoCard}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
@@ -142,7 +162,7 @@ export default function TestRunModal({
                   >
                     <span style={{ fontSize: "14px" }}>🔒</span>
                     <span style={{ fontSize: "12px", color: "#991B1B", fontWeight: "500" }}>
-                      This automation is disabled in your Library. Enable it in the Automation Library to run test evaluations.
+                      This automation is disabled in your Library. Enable it in the Automation Library to run evaluations.
                     </span>
                   </div>
                 )}
@@ -171,19 +191,86 @@ export default function TestRunModal({
               </div>
             )}
 
+            {/* Execution Result Box */}
             {displayedResult && (
-              <div style={activityLogStyles.resultBox}>
-                <h4 style={activityLogStyles.resultTitle}>
-                  {displayedResult.shouldAlert
-                    ? "⚡ Alert Triggered!"
-                    : "✓ Evaluated (No Alert Triggered)"}
-                </h4>
-                <p style={activityLogStyles.resultDesc}>
-                  {displayedResult.evaluationResult?.summary ||
-                    displayedResult.reason ||
-                    "Automation ran successfully against store data."}
-                </p>
-              </div>
+              <>
+                {displayedResult.shouldAlert ? (
+                  <div style={activityLogStyles.resultBoxAlert}>
+                    <div style={activityLogStyles.resultTitle}>
+                      <span style={{ color: "#6D28D9", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>⚡</span>
+                        <span>Alert Triggered & Dispatched</span>
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          backgroundColor: "#EDE9FE",
+                          color: "#5B21B6",
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        ● Recorded to Activity Log
+                      </span>
+                    </div>
+                    <p style={activityLogStyles.resultDesc}>
+                      {displayedResult.evaluationResult?.summary ||
+                        "Store metrics triggered the configured threshold rule."}
+                    </p>
+                    {displayedResult.evaluationResult?.flaggedItems?.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          fontSize: "11.5px",
+                          color: "#5B21B6",
+                          fontWeight: "600",
+                        }}
+                      >
+                        📊 {displayedResult.evaluationResult.flaggedItems.length} item(s) flagged • Live notification dispatched.
+                      </div>
+                    )}
+                  </div>
+                ) : displayedResult.skipped ? (
+                  <div style={activityLogStyles.resultBoxWarning}>
+                    <div style={activityLogStyles.resultTitle}>
+                      <span style={{ color: "#B45309", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>⚠️</span>
+                        <span>Audit Skipped</span>
+                      </span>
+                    </div>
+                    <p style={{ ...activityLogStyles.resultDesc, color: "#92400E" }}>
+                      {displayedResult.reason || "Automation could not be evaluated."}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={activityLogStyles.resultBoxHealthy}>
+                    <div style={activityLogStyles.resultTitle}>
+                      <span style={{ color: "#047857", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>✓</span>
+                        <span>No Alert Triggered</span>
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          backgroundColor: "#D1FAE5",
+                          color: "#065F46",
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                        }}
+                      >
+                        ● Evaluated
+                      </span>
+                    </div>
+                    <p style={{ ...activityLogStyles.resultDesc, color: "#065F46" }}>
+                      {displayedResult.evaluationResult?.summary ||
+                        displayedResult.reason ||
+                        "Store data evaluated successfully. No threshold conditions were met."}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -212,20 +299,20 @@ export default function TestRunModal({
               disabled={isRunning || !isCurrentActive || !hasValidChannels}
               title={
                 !isCurrentActive
-                  ? "Enable this automation in the Library to test it"
+                  ? "Enable this automation in the Library to run an audit"
                   : !hasValidChannels
                   ? "Enable Email or Slack in settings to run this automation"
-                  : "Execute test run"
+                  : "Run on-demand audit now"
               }
             >
               {isRunning ? (
-                <span>Running Query...</span>
+                <span>Evaluating Store Data...</span>
               ) : (
                 <>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5">
                     <polygon points="5 3 19 12 5 21 5 3" />
                   </svg>
-                  <span>Execute Test Run</span>
+                  <span>Run Audit Now</span>
                 </>
               )}
             </button>

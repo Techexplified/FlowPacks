@@ -77,7 +77,7 @@ export const action = async ({ request }) => {
       return {
         success: true,
         result: { ...result, recipeSlug },
-        message: "Test automation completed!",
+        message: "On-demand audit completed!",
       };
     }
 
