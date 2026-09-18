@@ -1,6 +1,6 @@
 import db from "../db.server";
 import { runRecipeDataset } from "../services/shopifyql.server";
-import { dispatchNotification, sendSlackNotification } from "../services/notifier.server";
+import { dispatchNotification, sendSlackNotification, sendEmailNotification } from "../services/notifier.server";
 import { createActivityLog } from "../services/activity.server";
 import { evaluateRecipe } from "../services/evaluator.server";
 import { getDefaultThresholds, getAvailableChannels, getRecipeBySlug } from "../libs/recipes.config";
@@ -88,9 +88,12 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
             let notificationResult;
             if (channel === "SLACK" && merchant?.slackWebhookUrl) {
                 notificationResult = await sendSlackNotification(merchant.slackWebhookUrl, evaluationResult, shopDomain);
+            } else if (channel === "EMAIL" && merchant?.notificationEmail) {
+                notificationResult = await sendEmailNotification(merchant.notificationEmail, evaluationResult, shopDomain);
             } else {
                 notificationResult = await dispatchNotification(shopDomain, evaluationResult);
             }
+
 
             // 2. Update DB with lastRunAt, lastAlertedAt, and the new lastFingerprint
             await db.workflowSetting.upsert({

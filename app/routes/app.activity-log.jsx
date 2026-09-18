@@ -69,7 +69,7 @@ export const action = async ({ request }) => {
     if (actionType === "TEST_RUN") {
       const recipeSlug = formData.get("recipeSlug");
       const result = await runWorkflow(admin, session.shop, recipeSlug, {
-        force: false,
+        force: true,
       });
       if (result.skipped) {
         return { success: false, skipped: true, recipeSlug, reason: result.reason };

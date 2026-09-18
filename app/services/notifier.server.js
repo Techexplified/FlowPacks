@@ -1,36 +1,39 @@
 import { createActivityLog } from "./activity.server";
+import { Resend } from "resend";
+import { generateAlertEmailHtml } from "./email-template.server";
+
 
 /**
  * Core notification dispatcher.
  * Handles in-app audit logging for triggered automations.
  */
 export async function dispatchNotification(shopDomain, evaluationResult, status = "Completed") {
-    if (!evaluationResult || evaluationResult.shouldAlert === false) {
-        return {
-            delivered: false,
-            reason: "No alert triggered",
-        };
-    }
-
-    const channel = evaluationResult.deliveryChannel || "IN_APP";
-
-    const logRecord = {
-        recipeSlug: evaluationResult.recipeSlug,
-        recipeName: evaluationResult.recipeName,
-        summaryText: evaluationResult.summary,
-        channel: channel,
-        status: status,
-        isRead: false,
-        details: evaluationResult.flaggedItems,
-    };
-
-    const record = await createActivityLog(shopDomain, logRecord);
-
+  if (!evaluationResult || evaluationResult.shouldAlert === false) {
     return {
-        delivered: true,
-        channel: channel,
-        logRecord: record,
+      delivered: false,
+      reason: "No alert triggered",
     };
+  }
+
+  const channel = evaluationResult.deliveryChannel || "IN_APP";
+
+  const logRecord = {
+    recipeSlug: evaluationResult.recipeSlug,
+    recipeName: evaluationResult.recipeName,
+    summaryText: evaluationResult.summary,
+    channel: channel,
+    status: status,
+    isRead: false,
+    details: evaluationResult.flaggedItems,
+  };
+
+  const record = await createActivityLog(shopDomain, logRecord);
+
+  return {
+    delivered: true,
+    channel: channel,
+    logRecord: record,
+  };
 }
 
 // Alias for backwards compatibility
@@ -144,14 +147,14 @@ export async function sendSlackNotification(webhookUrl, evaluationResult, shopDo
         },
         ...(itemsList
           ? [
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: `*Flagged Items:*\n${itemsList}`,
-                },
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `*Flagged Items:*\n${itemsList}`,
               },
-            ]
+            },
+          ]
           : []),
         {
           type: "divider",
@@ -183,6 +186,72 @@ export async function sendSlackNotification(webhookUrl, evaluationResult, shopDo
     return {
       delivered: false,
       error: error.message || "Network error sending Slack notification",
+    };
+  }
+}
+
+// Email Notifications
+export async function sendEmailNotification(toEmail, evaluationResult, shopDomain) {
+  if (!toEmail) {
+    console.warn("[Resend] No destination email configured for shop:", shopDomain);
+    await dispatchNotification(shopDomain, evaluationResult, "Failed");
+    return {
+      delivered: false,
+      reason: "No destination Email configured",
+    };
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[Resend] RESEND_API_KEY missing in environment variables. Skipping Email Notification.");
+    await dispatchNotification(shopDomain, evaluationResult, "Failed");
+    return {
+      delivered: false,
+      reason: "RESEND_API_KEY missing in environment variables",
+    };
+  }
+
+  if (!evaluationResult || evaluationResult.shouldAlert === false) {
+    return {
+      delivered: false,
+      reason: "No alert triggered",
+    };
+  }
+
+  try {
+    const resend = new Resend(apiKey);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "FlowPacks <onboarding@resend.dev>";
+    const recipeName = evaluationResult.recipeName || "Automation Alert";
+    const subject = `[FlowPacks] Alert: ${recipeName} (${shopDomain})`;
+    const html = generateAlertEmailHtml({ evaluationResult, shopDomain });
+
+    console.log(`[Resend] Sending alert email to ${toEmail} from ${fromEmail}...`);
+
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: [toEmail],
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error("[Resend] API error response:", error);
+      await dispatchNotification(shopDomain, evaluationResult, "Failed");
+      return { delivered: false, error: error.message };
+    }
+
+    console.log(`[Resend] Email sent successfully! Message ID: ${data?.id}`);
+    const notificationResult = await dispatchNotification(shopDomain, evaluationResult, "Completed");
+    return {
+      ...notificationResult,
+      emailId: data?.id,
+    };
+  } catch (error) {
+    console.error("[Resend] Failed to send email notification:", error);
+    await dispatchNotification(shopDomain, evaluationResult, "Failed");
+    return {
+      delivered: false,
+      error: error.message || "Network error sending email",
     };
   }
 }
