@@ -76,8 +76,10 @@ export default function App() {
   const [dismissedId, setDismissedId] = useState(null);
   const embedNavigate = useEmbedNavigate();
 
+  const isOnboardingPage = location.pathname.includes("/onboarding");
   const isActivityLogPage = location.pathname.includes("/activity-log");
   const showPopup =
+    !isOnboardingPage &&
     !isActivityLogPage &&
     latestUnreadLog &&
     latestUnreadLog.id !== dismissedId &&
@@ -110,13 +112,15 @@ export default function App() {
 
   return (
     <AppProvider embedded apiKey={apiKey}>
-      <s-app-nav>
-        <s-link href="/app/automation-library">Automation Library</s-link>
-        <s-link href="/app/activity-log">
-          {unreadCount > 0 ? `Activity Log (${unreadCount})` : "Activity Log"}
-        </s-link>
-        <s-link href="/app/settings">Settings</s-link>
-      </s-app-nav>
+      {!isOnboardingPage && (
+        <s-app-nav>
+          <s-link href="/app/automation-library">Automation Library</s-link>
+          <s-link href="/app/activity-log">
+            {unreadCount > 0 ? `Activity Log (${unreadCount})` : "Activity Log"}
+          </s-link>
+          <s-link href="/app/settings">Settings</s-link>
+        </s-app-nav>
+      )}
 
       <Outlet />
 
