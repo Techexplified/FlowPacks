@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useLoaderData, useFetcher, redirect } from "react-router";
+import { useLoaderData, useFetcher } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getOrCreateMerchantSettings, completeMerchantOnboarding, connectSlackWebhook, disconnectSlackWebhook } from "../services/merchant.server";
+import { embedRedirect } from "../utils/shopify-embed-nav.server.js";
 import WelcomeStep from "../components/onboarding/WelcomeStep";
 import NotificationSetupStep from "../components/onboarding/NotificationSetupStep";
 
@@ -30,6 +31,11 @@ export const loader = async ({ request }) => {
   }
 
   const merchantSettings = await getOrCreateMerchantSettings(session.shop, adminShopEmail);
+
+  // Route Guard: If onboarding is already completed, redirect to Automation Library
+  if (merchantSettings?.hasCompletedOnboarding) {
+    throw embedRedirect("/app/automation-library", request);
+  }
 
   return {
     shop: session.shop,
@@ -99,8 +105,9 @@ export const action = async ({ request }) => {
       channelName,
     });
 
-    return redirect("/app/automation-library");
+    throw embedRedirect("/app/automation-library", request);
   } catch (err) {
+    if (err instanceof Response) throw err;
     return {
       success: false,
       error: err.message || "Failed to complete onboarding. Please try again.",
