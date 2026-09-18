@@ -94,14 +94,16 @@ model ActivityLog {
 }
 
 model Suggestion {
-  id          String           @id @default(uuid())
-  shop        String
-  triggerIdea String
-  notes       String?
-  createdAt   DateTime         @default(now())
+  id           String           @id @default(uuid())
+  shop         String
+  name         String
+  problem      String
+  trigger      String
+  contactEmail String?
+  createdAt    DateTime         @default(now())
 
   // Foreign key relation to MerchantSettings
-  merchant    MerchantSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  merchant     MerchantSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
 
-  @@index([shop])
+  @@index([shop, createdAt(sort: Desc)])
 }

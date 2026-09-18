@@ -119,6 +119,7 @@ export default function App() {
             {unreadCount > 0 ? `Activity Log (${unreadCount})` : "Activity Log"}
           </s-link>
           <s-link href="/app/settings">Settings</s-link>
+          <s-link href="/app/suggest-automation">Suggest an Automation</s-link>
         </s-app-nav>
       )}
 

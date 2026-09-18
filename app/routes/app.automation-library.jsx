@@ -12,6 +12,7 @@ import LibraryFilterBar from "../components/library/LibraryFilterBar";
 import RecipeCard from "../components/library/RecipeCard";
 import SuggestBanner from "../components/library/SuggestBanner";
 import RecipeEditModal from "../components/library/RecipeEditModal";
+import { useEmbedNavigate } from "../hooks/use-embed-navigate";
 import { libraryStyles } from "../styles/library.styles";
 
 /**
@@ -68,6 +69,7 @@ export const action = async ({ request }) => {
 export default function AutomationLibraryPage() {
   const { recipes = [] } = useLoaderData();
   const editFetcher = useFetcher();
+  const embedNavigate = useEmbedNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -150,10 +152,7 @@ export default function AutomationLibraryPage() {
 
       {/* Bottom Suggestion Banner */}
       <SuggestBanner
-        onSuggestClick={() => {
-          setToastMessage("Suggest an automation page coming soon");
-          setTimeout(() => setToastMessage(""), 3000);
-        }}
+        onSuggestClick={() => embedNavigate("/app/suggest-automation")}
       />
 
       {/* Edit Automation Modal */}

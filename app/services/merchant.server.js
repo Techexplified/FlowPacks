@@ -276,17 +276,30 @@ export async function updateWorkflowConfig(shopDomain, recipeSlug, rawConfig, de
 /**
  * Submits a new automation idea from merchant.
  */
-export async function createSuggestion(shopDomain, triggerIdea, notes = "") {
+export async function createSuggestion(shopDomain, data) {
   try {
-    if (!triggerIdea || !triggerIdea.trim()) {
-      throw new Error("Trigger idea is required.");
+    const name = data?.name?.trim();
+    const problem = data?.problem?.trim();
+    const trigger = data?.trigger?.trim();
+    const contactEmail = data?.contactEmail?.trim() || null;
+
+    if (!name) {
+      throw new Error("Automation name is required.");
+    }
+    if (!problem) {
+      throw new Error("Problem description is required.");
+    }
+    if (!trigger) {
+      throw new Error("Trigger condition is required.");
     }
 
     const suggestion = await db.suggestion.create({
       data: {
         shop: shopDomain,
-        triggerIdea: triggerIdea.trim(),
-        notes: notes ? notes.trim() : null,
+        name,
+        problem,
+        trigger,
+        contactEmail,
       },
     });
 
