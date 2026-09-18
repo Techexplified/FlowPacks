@@ -1,54 +1,58 @@
-import { redirect, Form, useLoaderData } from "react-router";
-import { login } from "../../shopify.server";
-import styles from "./styles.module.css";
+import { redirect } from "react-router";
+import { authenticate } from "../../shopify.server";
+import { getOrCreateMerchantSettings } from "../../services/merchant.server";
+
+const EMBED_QUERY_KEYS = [
+  "shop",
+  "host",
+  "embedded",
+  "hmac",
+  "id_token",
+  "session",
+  "timestamp",
+  "locale",
+];
+
+function hasEmbedContext(url) {
+  return EMBED_QUERY_KEYS.some((key) => url.searchParams.has(key));
+}
+
+function isLikelyShopifyAdminReferer(request) {
+  const referer = request.headers.get("Referer") || "";
+  return (
+    referer.includes("admin.shopify.com") ||
+    referer.includes(".myshopify.com/admin")
+  );
+}
+
+function appHomeUrl(request, targetRoute = "/app/automation-library") {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  return qs ? `${targetRoute}?${qs}` : targetRoute;
+}
 
 export const loader = async ({ request }) => {
   const url = new URL(request.url);
 
-  if (url.searchParams.get("shop")) {
-    throw redirect(`/app?${url.searchParams.toString()}`);
+  // 1. Embedded admin context or OAuth return — go straight to the app UI with all query params
+  if (hasEmbedContext(url) || isLikelyShopifyAdminReferer(request)) {
+    throw redirect(appHomeUrl(request));
   }
 
-  return { showForm: Boolean(login) };
+  // 2. Existing session (e.g. reopen from Apps menu without query params)
+  try {
+    const { session } = await authenticate.admin(request);
+    const merchant = await getOrCreateMerchantSettings(session.shop);
+    const destination = !merchant?.hasCompletedOnboarding
+      ? "/app/onboarding"
+      : "/app/automation-library";
+    throw redirect(appHomeUrl(request, destination));
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    throw redirect("/auth/login");
+  }
 };
 
-export default function App() {
-  const { showForm } = useLoaderData();
-
-  return (
-    <div className={styles.index}>
-      <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
-        <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
-        </p>
-        {showForm && (
-          <Form className={styles.form} method="post" action="/auth/login">
-            <label className={styles.label}>
-              <span>Shop domain</span>
-              <input className={styles.input} type="text" name="shop" />
-              <span>e.g: my-shop-domain.myshopify.com</span>
-            </label>
-            <button className={styles.button} type="submit">
-              Log in
-            </button>
-          </Form>
-        )}
-        <ul className={styles.list}>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
+export default function Index() {
+  return null; // Never render the placeholder page
 }

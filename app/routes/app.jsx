@@ -17,6 +17,7 @@ import {
 } from "../services/activity.server";
 import { getOrCreateMerchantSettings } from "../services/merchant.server";
 import NotificationToast from "../components/common/NotificationToast";
+import { useEmbedNavigate } from "../hooks/use-embed-navigate";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -73,6 +74,7 @@ export default function App() {
   const navigate = useNavigate();
 
   const [dismissedId, setDismissedId] = useState(null);
+  const embedNavigate = useEmbedNavigate();
 
   const isActivityLogPage = location.pathname.includes("/activity-log");
   const showPopup =
@@ -103,7 +105,7 @@ export default function App() {
     if (latestUnreadLog) {
       handleMarkAsRead({ stopPropagation: () => {} });
     }
-    navigate("/app/activity-log");
+    embedNavigate("/app/activity-log");
   };
 
   return (
