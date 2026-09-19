@@ -2,7 +2,7 @@
 
 client_id = "baed0f54d57eedbf897f53b9bf9d6670"
 name = "FlowPacks"
-application_url = "https://example.com"
+application_url = "https://flow-packs.vercel.app"
 embedded = true
 
 [access_scopes]
@@ -45,8 +45,7 @@ api_version = "2026-10"
   topics = [ "app/scopes_update" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://flow-packs.vercel.app/api/auth" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
