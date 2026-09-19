@@ -1,5 +1,3 @@
-import { Sparkles } from "lucide-react";
-
 export default function WelcomeStep({ onContinue }) {
   return (
     <div style={styles.container}>
@@ -30,7 +28,11 @@ export default function WelcomeStep({ onContinue }) {
 
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
-            <Sparkles size={22} color="#5C28D8" strokeWidth={2.2} />
+            <img
+              src="/Flowpacks-logo.png"
+              alt="FlowPacks"
+              style={styles.logoImg}
+            />
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>
@@ -180,7 +182,7 @@ const styles = {
     width: "44px",
     height: "44px",
     borderRadius: "10px",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EEF0FF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -189,9 +191,10 @@ const styles = {
     flexShrink: 0,
   },
   logoImg: {
-    width: "28px",
-    height: "28px",
-    objectFit: "contain",
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    transform: "scale(1.36)",
   },
   brandTitle: {
     fontSize: "22px",

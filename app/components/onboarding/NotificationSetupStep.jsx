@@ -151,7 +151,11 @@ export default function NotificationSetupStep({
 
         <div style={styles.brandGroup}>
           <div style={styles.logoWrapper}>
-            <Sparkles size={22} color="#5C28D8" strokeWidth={2.2} />
+            <img
+              src="/Flowpacks-logo.png"
+              alt="FlowPacks"
+              style={styles.logoImg}
+            />
           </div>
           <span style={styles.brandTitle}>FlowPacks</span>
         </div>
@@ -164,7 +168,7 @@ export default function NotificationSetupStep({
       {/* Main Card */}
       <div style={styles.card}>
         <div style={styles.titleSection}>
-          <h1 style={styles.heading}>Notification destinations</h1>
+          <h1 style={styles.heading}>Notification Destinations</h1>
           <p style={styles.subheading}>
             Connect and manage where you want to receive alerts from your automations.
           </p>
@@ -613,13 +617,19 @@ const styles = {
     width: "44px",
     height: "44px",
     borderRadius: "10px",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EEF0FF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
     boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
     flexShrink: 0,
+  },
+  logoImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    transform: "scale(1.36)",
   },
   brandTitle: {
     fontSize: "20px",
