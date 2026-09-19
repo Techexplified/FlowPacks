@@ -44,6 +44,10 @@ api_version = "2026-10"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "https://flow-packs.vercel.app/webhooks"
+
 [auth]
 redirect_urls = [ "https://flow-packs.vercel.app/api/auth" ]
 
