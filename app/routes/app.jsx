@@ -24,9 +24,11 @@ export const loader = async ({ request }) => {
 
   let unreadCount = 0;
   let latestUnreadLog = null;
+  let hasCompletedOnboarding = false;
 
   try {
     const merchant = await getOrCreateMerchantSettings(session.shop);
+    hasCompletedOnboarding = Boolean(merchant?.hasCompletedOnboarding);
     const enabledTypes = merchant?.enabledNotificationTypes || ["EMAIL", "SLACK", "IN_APP"];
     const isInAppEnabled = enabledTypes.includes("IN_APP");
 
@@ -44,6 +46,7 @@ export const loader = async ({ request }) => {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     unreadCount,
     latestUnreadLog,
+    hasCompletedOnboarding,
   };
 };
 
@@ -68,7 +71,7 @@ export const action = async ({ request }) => {
 };
 
 export default function App() {
-  const { apiKey, unreadCount = 0, latestUnreadLog = null } = useLoaderData();
+  const { apiKey, unreadCount = 0, latestUnreadLog = null, hasCompletedOnboarding = false } = useLoaderData();
   const fetcher = useFetcher();
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,7 +79,7 @@ export default function App() {
   const [dismissedId, setDismissedId] = useState(null);
   const embedNavigate = useEmbedNavigate();
 
-  const isOnboardingPage = location.pathname.includes("/onboarding");
+  const isOnboardingPage = location.pathname.includes("/onboarding") || !hasCompletedOnboarding;
   const isActivityLogPage = location.pathname.includes("/activity-log");
   const showPopup =
     !isOnboardingPage &&

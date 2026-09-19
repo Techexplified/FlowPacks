@@ -25,7 +25,7 @@ function isLikelyShopifyAdminReferer(request) {
   );
 }
 
-function appHomeUrl(request, targetRoute = "/app/automation-library") {
+function appHomeUrl(request, targetRoute = "/app") {
   const url = new URL(request.url);
   const qs = url.searchParams.toString();
   return qs ? `${targetRoute}?${qs}` : targetRoute;
@@ -34,9 +34,19 @@ function appHomeUrl(request, targetRoute = "/app/automation-library") {
 export const loader = async ({ request }) => {
   const url = new URL(request.url);
 
-  // 1. Embedded admin context or OAuth return — go straight to the app UI with all query params
+  // 1. Embedded admin context or OAuth return — check onboarding status and redirect accordingly
   if (hasEmbedContext(url) || isLikelyShopifyAdminReferer(request)) {
-    throw redirect(appHomeUrl(request));
+    try {
+      const { session } = await authenticate.admin(request);
+      const merchant = await getOrCreateMerchantSettings(session.shop);
+      const destination = !merchant?.hasCompletedOnboarding
+        ? "/app/onboarding"
+        : "/app/automation-library";
+      throw redirect(appHomeUrl(request, destination));
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      throw redirect(appHomeUrl(request, "/app"));
+    }
   }
 
   // 2. Existing session (e.g. reopen from Apps menu without query params)
