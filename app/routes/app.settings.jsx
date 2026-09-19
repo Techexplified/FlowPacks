@@ -1,5 +1,6 @@
 import { useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { BellOff } from "lucide-react";
 import { authenticate } from "../shopify.server";
 import {
   getOrCreateMerchantSettings,
@@ -95,6 +96,7 @@ export default function SettingsPage() {
   const isEmailEnabled = enabledTypes.includes("EMAIL");
   const isSlackEnabled = enabledTypes.includes("SLACK");
   const isInAppEnabled = enabledTypes.includes("IN_APP");
+  const allDisabled = !isEmailEnabled && !isSlackEnabled && !isInAppEnabled;
 
   return (
     <div style={settingsStyles.container}>
@@ -109,6 +111,21 @@ export default function SettingsPage() {
             Connect and manage where you want to receive alerts from your automations.
           </p>
         </div>
+
+        {/* Notice when all destinations are disabled */}
+        {allDisabled && (
+          <div style={settingsStyles.warningBanner}>
+            <div style={settingsStyles.warningIconBox}>
+              <BellOff size={18} color="#B45309" strokeWidth={2.2} />
+            </div>
+            <div>
+              <h4 style={settingsStyles.warningTitle}>All notification destinations are disabled</h4>
+              <p style={settingsStyles.warningDesc}>
+                Automations and scheduled scans will not send alerts or record logs until at least one destination (Email, Slack, or In-App) is enabled.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div style={settingsStyles.destinationsGrid}>
           {/* Card 1: Email */}
