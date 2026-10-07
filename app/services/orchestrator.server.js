@@ -50,6 +50,20 @@ export async function runWorkflow(admin, shopDomain, recipeSlug, options = { for
             ? workflowSetting.deliveryChannel
             : availableChannels[0];
 
+        // For weekly performance digest scheduled cron runs, only fire on the configured day of the week
+        if (recipeSlug === "weekly-performance-digest" && !options.force) {
+            const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const currentDayName = daysOfWeek[new Date().getDay()];
+            const targetDay = config.sendDay || "Monday";
+            if (currentDayName !== targetDay) {
+                return {
+                    success: true,
+                    skipped: true,
+                    reason: `Weekly digest is scheduled for ${targetDay} (today is ${currentDayName}).`,
+                };
+            }
+        }
+
         const datasetResult = await runRecipeDataset(admin, recipeSlug, config);
         const evaluationResult = await evaluateRecipe(datasetResult, channel);
 

@@ -1,4 +1,4 @@
-import { getRecipeBySlug } from "../libs/recipes.config";
+import { getRecipeBySlug } from "../libs/recipes.config.js";
 
 /**
  * Core GraphQL document for executing ShopifyQL queries on the Shopify Admin API.
@@ -273,11 +273,104 @@ export async function fetchProductsByHandles(admin, handles = []) {
 }
 
 /**
+ * Fetches recent orders from Shopify Admin GraphQL API.
+ * Captures both test orders (test: true) and production orders with zero reporting latency.
+ */
+export async function fetchRecentOrdersFromGraphQL(admin, lookbackDays = 7) {
+  try {
+    const cutoffDate = new Date(Date.now() - Number(lookbackDays) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const dateQuery = `created_at:>=${cutoffDate}`;
+
+    const response = await admin.graphql(
+      `#graphql
+        query getRecentOrders($query: String!) {
+          orders(first: 50, query: $query) {
+            nodes {
+              id
+              name
+              createdAt
+              test
+              totalPriceSet {
+                shopMoney {
+                  amount
+                }
+              }
+              lineItems(first: 20) {
+                nodes {
+                  quantity
+                  product {
+                    id
+                    title
+                    totalInventory
+                    featuredImage {
+                      url
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      { variables: { query: dateQuery } }
+    );
+
+    const result = await response.json();
+    return result?.data?.orders?.nodes || [];
+  } catch (err) {
+    console.error("Error fetching recent orders via GraphQL:", err.message);
+    return [];
+  }
+}
+
+/**
+ * Aggregates line item sales and store gross revenue from GraphQL orders.
+ */
+export function aggregateProductSalesFromOrders(orders = []) {
+  const productSalesMap = {};
+  let totalNetSales = 0;
+  const totalOrderCount = orders.length;
+
+  for (const order of orders) {
+    const orderAmount = parseFloat(order.totalPriceSet?.shopMoney?.amount || 0);
+    totalNetSales += Number.isNaN(orderAmount) ? 0 : orderAmount;
+
+    for (const item of order.lineItems?.nodes || []) {
+      const prod = item.product;
+      if (!prod) continue;
+      const rawId = toRawProductId(prod.id);
+      const gid = toProductGid(prod.id);
+      const qty = Number(item.quantity || 1);
+
+      if (!productSalesMap[rawId]) {
+        productSalesMap[rawId] = {
+          product_id: rawId,
+          product_title: prod.title,
+          net_items_sold: 0,
+          currentInventory: typeof prod.totalInventory === "number" ? prod.totalInventory : 0,
+          productImageUrl: prod.featuredImage?.url || null,
+        };
+        productSalesMap[gid] = productSalesMap[rawId];
+      }
+
+      productSalesMap[rawId].net_items_sold += qty;
+    }
+  }
+
+  return { productSalesMap, totalNetSales, totalOrderCount };
+}
+
+/**
  * Fetches recently created products from Shopify Admin GraphQL API within launch window days.
  */
 export async function fetchRecentlyCreatedProducts(admin, launchWindowDays = 14) {
   try {
-    const dateQuery = `created_at:>=-${launchWindowDays}d`;
+    const cutoffDate = new Date(Date.now() - Number(launchWindowDays) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const dateQuery = `created_at:>=${cutoffDate}`;
     const response = await admin.graphql(RECENT_PRODUCTS_QUERY, {
       variables: { query: dateQuery },
     });
@@ -314,23 +407,91 @@ export async function runRecipeDataset(admin, recipeSlug, config = {}) {
   // 3. Enrich specific recipes with supplementary Shopify metadata
   let enrichedRows = queryResult.rows;
 
-  // Recipe 1: Rising demand & falling stock (Enrich with live inventory)
-  if (recipeSlug === "rising-demand-falling-stock" && enrichedRows.length > 0) {
-    const productIds = enrichedRows
-      .map((r) => r.product_id)
-      .filter(Boolean);
+  // Recipe 1: Rising demand & falling stock (Enrich with live inventory and recent orders)
+  if (recipeSlug === "rising-demand-falling-stock") {
+    // Fetch recent orders via GraphQL to capture real-time test orders and recent checkouts
+    const recentOrders = await fetchRecentOrdersFromGraphQL(admin, 7);
+    const { productSalesMap } = aggregateProductSalesFromOrders(recentOrders);
 
-    const inventoryMap = await fetchProductInventories(admin, productIds);
+    const mergedMap = new Map();
+    for (const row of enrichedRows) {
+      if (row.product_id) {
+        const rawId = toRawProductId(row.product_id);
+        mergedMap.set(rawId, {
+          product_id: rawId,
+          product_title: row.product_title || "",
+          net_items_sold: Number(row.net_items_sold || 0),
+        });
+      }
+    }
 
-    enrichedRows = enrichedRows.map((row) => {
-      const inv = inventoryMap[row.product_id] || inventoryMap[toProductGid(row.product_id)] || { totalInventory: 0 };
-      return {
-        ...row,
-        currentInventory: inv.totalInventory,
-        productImageUrl: inv.imageUrl || null,
-        netItemsSold: Number(row.net_items_sold || 0),
-      };
-    });
+    // Merge in any products sold in recent orders (vital for test orders and instant review testing)
+    for (const [prodId, data] of Object.entries(productSalesMap)) {
+      const rawId = toRawProductId(prodId);
+      if (mergedMap.has(rawId)) {
+        const existing = mergedMap.get(rawId);
+        existing.net_items_sold = Math.max(existing.net_items_sold, data.net_items_sold);
+        if (!existing.product_title && data.product_title) {
+          existing.product_title = data.product_title;
+        }
+      } else {
+        mergedMap.set(rawId, {
+          product_id: rawId,
+          product_title: data.product_title,
+          net_items_sold: data.net_items_sold,
+        });
+      }
+    }
+
+    enrichedRows = Array.from(mergedMap.values());
+
+    if (enrichedRows.length > 0) {
+      const productIds = enrichedRows
+        .map((r) => r.product_id)
+        .filter(Boolean);
+
+      const inventoryMap = await fetchProductInventories(admin, productIds);
+
+      enrichedRows = enrichedRows.map((row) => {
+        const inv = inventoryMap[row.product_id] || inventoryMap[toProductGid(row.product_id)] || { totalInventory: 0 };
+        return {
+          ...row,
+          currentInventory: inv.totalInventory,
+          productImageUrl: inv.imageUrl || null,
+          netItemsSold: Number(row.net_items_sold || 0),
+        };
+      });
+    }
+  }
+
+  // Recipe 3: Weekly performance digest (Fallback to GraphQL orders if ShopifyQL has 0 rows)
+  if (recipeSlug === "weekly-performance-digest") {
+    if (enrichedRows.length === 0) {
+      const recentOrders = await fetchRecentOrdersFromGraphQL(admin, 7);
+      const { totalNetSales, totalOrderCount } = aggregateProductSalesFromOrders(recentOrders);
+      enrichedRows = [
+        {
+          net_sales: totalNetSales,
+          orders: totalOrderCount,
+          comparison_net_sales: 0,
+          comparison_orders: 0,
+        },
+      ];
+    }
+  }
+
+  // Recipe 4: Slowing-down bestseller (Fallback to GraphQL orders if ShopifyQL has 0 rows)
+  if (recipeSlug === "slowing-down-bestseller") {
+    if (enrichedRows.length === 0) {
+      const recentOrders = await fetchRecentOrdersFromGraphQL(admin, 14);
+      const { productSalesMap } = aggregateProductSalesFromOrders(recentOrders);
+      enrichedRows = Object.values(productSalesMap).map((p) => ({
+        product_id: p.product_id,
+        product_title: p.product_title,
+        net_sales: p.net_sales,
+        previous_net_sales: 0,
+      }));
+    }
   }
 
   // Recipe 2: High traffic, low conversion (Resolve landing_page_path to products & join 7-day sales)
@@ -363,6 +524,18 @@ export async function runRecipeDataset(admin, recipeSlug, config = {}) {
         salesMap[rawId] = s;
         salesMap[gid] = s;
       });
+    }
+
+    // Also enrich with recent GraphQL orders
+    const recentOrders = await fetchRecentOrdersFromGraphQL(admin, 7);
+    const { productSalesMap } = aggregateProductSalesFromOrders(recentOrders);
+    for (const [prodId, pData] of Object.entries(productSalesMap)) {
+      const rawId = toRawProductId(prodId);
+      const gid = toProductGid(prodId);
+      if (!salesMap[rawId]) {
+        salesMap[rawId] = { orders: 1, net_items_sold: pData.net_items_sold };
+        salesMap[gid] = salesMap[rawId];
+      }
     }
 
     // 3. Combine sessions and orders per resolved product
@@ -425,6 +598,18 @@ export async function runRecipeDataset(admin, recipeSlug, config = {}) {
       });
     }
 
+    // Also enrich with recent GraphQL orders (captures test orders)
+    const recentOrders = await fetchRecentOrdersFromGraphQL(admin, Math.max(1, Math.ceil(hours / 24)));
+    const { productSalesMap } = aggregateProductSalesFromOrders(recentOrders);
+    for (const [prodId, pData] of Object.entries(productSalesMap)) {
+      const rawId = toRawProductId(prodId);
+      const gid = toProductGid(prodId);
+      if (!salesMap[rawId]) {
+        salesMap[rawId] = { orders: 1, net_items_sold: pData.net_items_sold };
+        salesMap[gid] = salesMap[rawId];
+      }
+    }
+
     // 3. Combine traffic momentum with order data
     const combinedRows = [];
     for (const { row, handle } of handleRowPairs) {
@@ -459,6 +644,18 @@ export async function runRecipeDataset(admin, recipeSlug, config = {}) {
       const gid = toProductGid(row.product_id);
       salesByProductId.set(rawId, row);
       salesByProductId.set(gid, row);
+    }
+
+    // Merge in GraphQL orders for recent test and live orders
+    const recentOrders = await fetchRecentOrdersFromGraphQL(admin, launchDays);
+    const { productSalesMap } = aggregateProductSalesFromOrders(recentOrders);
+    for (const [prodId, pData] of Object.entries(productSalesMap)) {
+      const rawId = toRawProductId(prodId);
+      const gid = toProductGid(prodId);
+      if (!salesByProductId.has(rawId)) {
+        salesByProductId.set(rawId, { net_items_sold: pData.net_items_sold });
+        salesByProductId.set(gid, { net_items_sold: pData.net_items_sold });
+      }
     }
 
     const mergedList = [];
